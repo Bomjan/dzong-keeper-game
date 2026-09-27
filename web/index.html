@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Last Dzong Keeper</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <header class="masthead">
+    <h1>The Last Dzong Keeper</h1>
+    <span class="subtitle">A record of the tshechu, kept by the kunyer</span>
+  </header>
+
+  <div class="layout">
+    <aside class="rail rail-left" id="left-rail" aria-label="Kunyer's actions"></aside>
+
+    <main class="stage" id="stage">
+      <div class="banner" id="error-banner" hidden>
+        <span class="banner-message" id="error-banner-message"></span>
+        <button class="banner-retry" id="error-banner-retry" type="button">Retry</button>
+      </div>
+      <div class="map-wrap" id="map-wrap">
+        <p class="loading-note" id="loading-note">Opening the dzong records&hellip;</p>
+      </div>
+    </main>
+
+    <aside class="rail rail-right" id="right-rail" aria-label="Findings, clues and suspects"></aside>
+  </div>
+</div>
+
+<div id="overlay-root"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

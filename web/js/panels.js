@@ -1,0 +1,371 @@
+// Renders the left rail, right rail, register drawer, banner and modal.
+// Every function here takes data and hands back nothing but DOM writes and
+// event wiring — no fetching, no game rules.
+
+const PHASE_LABELS = { FORENSIC: 'Forensic', PURSUIT: 'Pursuit', WON: 'Resolved', LOST: 'Failed' };
+
+const FINDING_TYPE_LABELS = {
+  MISSING: 'Missing',
+  EXTRA: 'Extra',
+  MOVED: 'Moved',
+  SUBSTITUTED: 'Substituted',
+  EXPLAINED: 'Explained',
+};
+
+const TABS = ['findings', 'clues', 'suspects'];
+const TAB_LABELS = { findings: 'Findings', clues: 'Clues', suspects: 'Suspects' };
+
+function emptyNote(text) {
+  const p = document.createElement('p');
+  p.className = 'empty-note';
+  p.textContent = text;
+  return p;
+}
+
+function makeActionButton(label, enabled, active, onClick) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = `action-btn${active ? ' active' : ''}`;
+  btn.textContent = label;
+  btn.disabled = !enabled;
+  if (onClick) btn.addEventListener('click', onClick);
+  return btn;
+}
+
+// -------------------------------------------------------------- left rail
+
+export function renderLeftRail(container, state, uiState, handlers) {
+  container.replaceChildren();
+
+  const gameOver = state.phase === 'WON' || state.phase === 'LOST';
+  const room = state.rooms.find((r) => r.id === state.currentRoom);
+  const ratio = state.timeTotal > 0 ? state.timeRemaining / state.timeTotal : 0;
+  const critical = ratio < 0.2;
+
+  const heading = document.createElement('div');
+  heading.className = 'room-heading';
+  const h2 = document.createElement('h2');
+  h2.textContent = room ? room.name : 'Unknown room';
+  heading.appendChild(h2);
+  const badge = document.createElement('span');
+  badge.className = `badge badge-${state.phase.toLowerCase()}`;
+  badge.textContent = PHASE_LABELS[state.phase] || state.phase;
+  heading.appendChild(badge);
+  container.appendChild(heading);
+
+  const timeBlock = document.createElement('div');
+  timeBlock.className = 'time-block';
+  const timeLabel = document.createElement('div');
+  timeLabel.className = 'time-label';
+  timeLabel.textContent = 'Time remaining';
+  timeBlock.appendChild(timeLabel);
+  const track = document.createElement('div');
+  track.className = 'time-bar-track';
+  const fill = document.createElement('div');
+  fill.className = `time-bar-fill${critical ? ' critical' : ''}`;
+  fill.style.width = `${Math.max(0, Math.min(100, ratio * 100))}%`;
+  track.appendChild(fill);
+  timeBlock.appendChild(track);
+  const number = document.createElement('div');
+  number.className = 'time-number';
+  number.textContent = `${state.timeRemaining} / ${state.timeTotal} min`;
+  timeBlock.appendChild(number);
+  container.appendChild(timeBlock);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+
+  const hasAdjacent = (state.adjacent || []).length > 0;
+  const hasWitnesses = (state.witnesses || []).length > 0;
+  const hasUneliminatedSuspect = (state.suspects || []).some((s) => !s.eliminated);
+
+  const notBusy = !uiState.busy;
+
+  actions.appendChild(makeActionButton('Move', notBusy && !gameOver && hasAdjacent, false, handlers.onMove));
+  actions.appendChild(makeActionButton('Inspect', notBusy && !gameOver, false, handlers.onInspect));
+  actions.appendChild(makeActionButton('Interview', notBusy && !gameOver && hasWitnesses, uiState.activeMode === 'interview', handlers.onInterview));
+  actions.appendChild(makeActionButton('Register', notBusy, false, handlers.onRegister));
+  actions.appendChild(makeActionButton('Lock', notBusy && !gameOver && state.edges.length > 0, uiState.activeMode === 'lock', handlers.onLock));
+  actions.appendChild(makeActionButton('Accuse', notBusy && !gameOver && hasUneliminatedSuspect, uiState.activeMode === 'accuse', handlers.onAccuse));
+
+  container.appendChild(actions);
+
+  const hint = document.createElement('p');
+  hint.className = 'mode-hint';
+  hint.textContent = uiState.hint || '';
+  container.appendChild(hint);
+
+  const message = document.createElement('p');
+  message.className = 'message-line';
+  message.textContent = state.message || '';
+  container.appendChild(message);
+}
+
+// ------------------------------------------------------------- right rail
+
+function roomName(rooms, roomId) {
+  const room = rooms.find((r) => r.id === roomId);
+  return room ? room.name : roomId;
+}
+
+function renderFindings(panel, findings, rooms) {
+  if (findings.length === 0) {
+    panel.appendChild(emptyNote('No findings recorded yet.'));
+    return;
+  }
+  for (const finding of findings) {
+    const item = document.createElement('div');
+    item.className = 'finding-item';
+    item.dataset.type = finding.type;
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'finding-title-row';
+    const name = document.createElement('span');
+    name.textContent = finding.itemName;
+    titleRow.appendChild(name);
+    const tag = document.createElement('span');
+    tag.className = 'finding-type-tag';
+    tag.textContent = FINDING_TYPE_LABELS[finding.type] || finding.type;
+    titleRow.appendChild(tag);
+    item.appendChild(titleRow);
+
+    if (finding.note) {
+      const note = document.createElement('div');
+      note.className = 'finding-note';
+      note.textContent = finding.note;
+      item.appendChild(note);
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'finding-meta';
+    const roomSpan = document.createElement('span');
+    roomSpan.textContent = roomName(rooms, finding.roomId);
+    meta.appendChild(roomSpan);
+    const timeSpan = document.createElement('span');
+    timeSpan.textContent = `${finding.estimatedTime} min`;
+    meta.appendChild(timeSpan);
+    item.appendChild(meta);
+
+    panel.appendChild(item);
+  }
+}
+
+function renderClues(panel, clues) {
+  if (clues.length === 0) {
+    panel.appendChild(emptyNote('No clues gathered yet.'));
+    return;
+  }
+  for (const clue of clues) {
+    const item = document.createElement('div');
+    item.className = 'clue-item';
+
+    const text = document.createElement('div');
+    text.className = 'clue-text';
+    text.textContent = `“${clue.text}”`;
+    item.appendChild(text);
+
+    const pct = Math.round((clue.reliability || 0) * 100);
+    const meta = document.createElement('div');
+    meta.className = 'clue-meta';
+    const source = document.createElement('span');
+    source.textContent = clue.source;
+    meta.appendChild(source);
+    const track = document.createElement('div');
+    track.className = 'reliability-track';
+    const barFill = document.createElement('div');
+    barFill.className = 'reliability-fill';
+    barFill.style.width = `${pct}%`;
+    track.appendChild(barFill);
+    meta.appendChild(track);
+    const pctSpan = document.createElement('span');
+    pctSpan.textContent = `${pct}%`;
+    meta.appendChild(pctSpan);
+    item.appendChild(meta);
+
+    panel.appendChild(item);
+  }
+}
+
+function renderSuspects(panel, suspects, uiState, handlers) {
+  if (suspects.length === 0) {
+    panel.appendChild(emptyNote('No suspects identified yet.'));
+    return;
+  }
+  const accuseMode = uiState.activeMode === 'accuse';
+  for (const suspect of suspects) {
+    const targetable = accuseMode && !suspect.eliminated;
+    const item = document.createElement('div');
+    item.className = `suspect-item${suspect.eliminated ? ' eliminated' : ''}${targetable ? ' targetable' : ''}`;
+
+    const label = document.createElement('span');
+    label.textContent = suspect.label;
+    item.appendChild(label);
+
+    if (targetable) {
+      const hint = document.createElement('span');
+      hint.className = 'suspect-hint';
+      hint.textContent = 'Accuse';
+      item.appendChild(hint);
+      item.addEventListener('click', () => handlers.onAccuseSuspect(suspect.id));
+    }
+
+    panel.appendChild(item);
+  }
+}
+
+export function renderRightRail(container, state, uiState, handlers) {
+  container.replaceChildren();
+
+  const tabs = document.createElement('div');
+  tabs.className = 'tabs';
+  for (const tab of TABS) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `tab-btn${uiState.activeTab === tab ? ' active' : ''}`;
+    btn.textContent = TAB_LABELS[tab];
+    btn.addEventListener('click', () => handlers.onTabChange(tab));
+    tabs.appendChild(btn);
+  }
+  container.appendChild(tabs);
+
+  const panel = document.createElement('div');
+  panel.className = 'tab-panel';
+
+  if (uiState.activeTab === 'findings') {
+    renderFindings(panel, state.findings || [], state.rooms);
+  } else if (uiState.activeTab === 'clues') {
+    renderClues(panel, state.clues || []);
+  } else {
+    renderSuspects(panel, state.suspects || [], uiState, handlers);
+  }
+
+  container.appendChild(panel);
+}
+
+// ------------------------------------------------------------ error banner
+
+export function showBanner(elements, message, onRetry) {
+  const { banner, messageEl, retryBtn } = elements;
+  messageEl.textContent = message;
+  banner.hidden = false;
+  retryBtn.onclick = onRetry;
+}
+
+export function hideBanner(elements) {
+  elements.banner.hidden = true;
+  elements.retryBtn.onclick = null;
+}
+
+// --------------------------------------------------------- register drawer
+
+export function openRegisterDrawer(overlayRoot, handlers) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'drawer-backdrop';
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) handlers.onClose();
+  });
+
+  const drawer = document.createElement('div');
+  drawer.className = 'drawer';
+
+  const header = document.createElement('div');
+  header.className = 'drawer-header';
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Temple Register';
+  header.appendChild(h3);
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'drawer-close';
+  closeBtn.textContent = '×';
+  closeBtn.setAttribute('aria-label', 'Close register');
+  closeBtn.addEventListener('click', () => handlers.onClose());
+  header.appendChild(closeBtn);
+  drawer.appendChild(header);
+
+  const input = document.createElement('input');
+  input.type = 'search';
+  input.placeholder = 'Search the register…';
+  input.setAttribute('aria-label', 'Search the register');
+  drawer.appendChild(input);
+
+  const list = document.createElement('ul');
+  list.className = 'register-list';
+  drawer.appendChild(list);
+
+  backdrop.appendChild(drawer);
+  overlayRoot.replaceChildren(backdrop);
+
+  let debounceTimer = null;
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const query = input.value;
+    debounceTimer = setTimeout(() => handlers.onSearch(query, list), 300);
+  });
+
+  input.focus();
+  handlers.onSearch('', list);
+
+  return { input, list };
+}
+
+export function closeOverlay(overlayRoot) {
+  overlayRoot.replaceChildren();
+}
+
+export function renderRegisterResults(list, results, roomsById) {
+  list.replaceChildren();
+  if (results.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'empty-note';
+    li.textContent = 'No matching entries.';
+    list.appendChild(li);
+    return;
+  }
+  for (const entry of results) {
+    const li = document.createElement('li');
+    li.className = 'register-item';
+    const name = document.createElement('div');
+    name.className = 'item-name';
+    name.textContent = entry.itemName;
+    li.appendChild(name);
+    const meta = document.createElement('div');
+    meta.className = 'item-meta';
+    const room = roomsById.get(entry.roomId);
+    meta.textContent = `${entry.category} · ${room ? room.name : entry.roomId} · ${entry.custodian}`;
+    li.appendChild(meta);
+    list.appendChild(li);
+  }
+}
+
+// ----------------------------------------------------------------- modal
+
+export function showModal(overlayRoot, { title, body, actionLabel = 'Close', onAction }) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+
+  const h2 = document.createElement('h2');
+  h2.textContent = title;
+  modal.appendChild(h2);
+
+  const p = document.createElement('p');
+  p.textContent = body;
+  modal.appendChild(p);
+
+  const actions = document.createElement('div');
+  actions.className = 'modal-actions';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = actionLabel;
+  btn.addEventListener('click', () => {
+    overlayRoot.replaceChildren();
+    if (onAction) onAction();
+  });
+  actions.appendChild(btn);
+  modal.appendChild(actions);
+
+  backdrop.appendChild(modal);
+  overlayRoot.replaceChildren(backdrop);
+}
