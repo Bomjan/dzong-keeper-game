@@ -7,6 +7,7 @@
 // the server and re-renders from that alone.
 
 import * as api from './api.js';
+import * as audio from './audio.js';
 import { renderMap } from './map.js';
 import {
   renderLeftRail,
@@ -17,18 +18,35 @@ import {
   closeOverlay,
   renderRegisterResults,
   showModal,
+  showIntro,
 } from './panels.js';
 
 const leftRail = document.getElementById('left-rail');
 const rightRail = document.getElementById('right-rail');
 const mapWrap = document.getElementById('map-wrap');
 const overlayRoot = document.getElementById('overlay-root');
+const vignette = document.getElementById('stage-vignette');
+const soundToggleBtn = document.getElementById('sound-toggle');
 
 const bannerEls = {
   banner: document.getElementById('error-banner'),
   messageEl: document.getElementById('error-banner-message'),
   retryBtn: document.getElementById('error-banner-retry'),
 };
+
+const SOUND_ON_ICON = '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 8a5 5 0 0 1 0 8"/></svg><span>Sound on</span>';
+const SOUND_OFF_ICON = '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><line x1="16" y1="9" x2="21" y2="14"/><line x1="21" y1="9" x2="16" y2="14"/></svg><span>Sound off</span>';
+
+function renderSoundToggle() {
+  soundToggleBtn.innerHTML = audio.isMuted() ? SOUND_OFF_ICON : SOUND_ON_ICON;
+}
+
+soundToggleBtn.addEventListener('click', () => {
+  audio.setMuted(!audio.isMuted());
+  renderSoundToggle();
+  if (!audio.isMuted()) audio.playClick();
+});
+renderSoundToggle();
 
 let currentState = null;
 let busy = false;
@@ -54,6 +72,11 @@ function render() {
     interviewModeActive: uiState.activeMode === 'interview',
   }, mapHandlers);
   renderRightRail(rightRail, currentState, uiState, rightHandlers);
+
+  const ratio = currentState.timeTotal > 0 ? currentState.timeRemaining / currentState.timeTotal : 1;
+  const gameOver = currentState.phase === 'WON' || currentState.phase === 'LOST';
+  vignette.classList.toggle('critical', ratio < 0.2 && !gameOver);
+
   maybeShowEndModal();
 }
 
@@ -61,11 +84,36 @@ function maybeShowEndModal() {
   const phase = currentState.phase;
   if ((phase === 'WON' || phase === 'LOST') && lastEndModalPhase !== phase) {
     lastEndModalPhase = phase;
+    if (phase === 'WON') audio.playAccuseCorrect(); else audio.playAccuseWrong();
     showModal(overlayRoot, {
       title: phase === 'WON' ? 'The Dzong Is Secure' : 'The Tshechu Has Ended',
       body: currentState.message || '',
       actionLabel: 'Close',
+      variant: phase === 'WON' ? 'won' : 'lost',
     });
+  }
+}
+
+function playActionSound(kind, prev, next) {
+  switch (kind) {
+    case 'move':
+      audio.playMove();
+      break;
+    case 'inspect': {
+      const room = next.rooms.find((r) => r.id === next.currentRoom);
+      const prevRoom = prev && prev.rooms.find((r) => r.id === prev.currentRoom);
+      const found = room && prevRoom && room.anomalyCount > prevRoom.anomalyCount;
+      if (found) audio.playInspectFound(); else audio.playInspectEmpty();
+      break;
+    }
+    case 'interview':
+      audio.playInterview();
+      break;
+    case 'lock':
+      audio.playLock();
+      break;
+    default:
+      break;
   }
 }
 
@@ -83,8 +131,9 @@ async function refresh() {
   }
 }
 
-async function runAction(fn) {
+async function runAction(fn, kind) {
   if (busy) return;
+  const prevState = currentState;
   setBusy(true);
   render();
   try {
@@ -92,8 +141,10 @@ async function runAction(fn) {
     uiState.activeMode = null;
     uiState.hint = '';
     hideBanner(bannerEls);
+    playActionSound(kind, prevState, currentState);
   } catch (err) {
-    showBanner(bannerEls, err.message, () => runAction(fn));
+    audio.playError();
+    showBanner(bannerEls, err.message, () => runAction(fn, kind));
   } finally {
     setBusy(false);
     render();
@@ -115,13 +166,16 @@ async function runAccuse(suspectId) {
     lastEndModalPhase = currentState.phase;
     setBusy(false);
     render();
+    if (outcome.correct) audio.playAccuseCorrect(); else audio.playAccuseWrong();
     showModal(overlayRoot, {
       title: outcome.correct ? 'Case Closed' : 'Suspect Cleared',
       body: outcome.message,
       actionLabel: 'Continue',
+      variant: outcome.correct ? 'won' : null,
     });
     return;
   } catch (err) {
+    audio.playError();
     showBanner(bannerEls, err.message, () => runAccuse(suspectId));
   }
   setBusy(false);
@@ -130,6 +184,7 @@ async function runAccuse(suspectId) {
 
 function toggleMode(mode, hintText) {
   if (busy) return;
+  audio.playClick();
   closeOverlay(overlayRoot);
   uiState.activeMode = uiState.activeMode === mode ? null : mode;
   uiState.hint = uiState.activeMode ? hintText : '';
@@ -139,6 +194,7 @@ function toggleMode(mode, hintText) {
 
 function openRegister() {
   if (busy) return;
+  audio.playClick();
   uiState.activeMode = null;
   uiState.hint = '';
   render();
@@ -177,7 +233,7 @@ const leftHandlers = {
       : 'There is nowhere to move from here.';
     render();
   },
-  onInspect: () => runAction(() => api.inspect()),
+  onInspect: () => runAction(() => api.inspect(), 'inspect'),
   onInterview: () => toggleMode('interview', 'Click a witness marker on the map to interview them.'),
   onRegister: () => openRegister(),
   onLock: () => toggleMode('lock', 'Click a corridor on the map to lock or unlock it.'),
@@ -185,9 +241,9 @@ const leftHandlers = {
 };
 
 const mapHandlers = {
-  onRoomClick: (roomId) => runAction(() => api.move(roomId)),
-  onEdgeClick: (edgeId) => runAction(() => api.lockEdge(edgeId)),
-  onWitnessClick: (witnessId) => runAction(() => api.interview(witnessId)),
+  onRoomClick: (roomId) => runAction(() => api.move(roomId), 'move'),
+  onEdgeClick: (edgeId) => runAction(() => api.lockEdge(edgeId), 'lock'),
+  onWitnessClick: (witnessId) => runAction(() => api.interview(witnessId), 'interview'),
 };
 
 const rightHandlers = {
@@ -198,4 +254,8 @@ const rightHandlers = {
   onAccuseSuspect: (suspectId) => runAccuse(suspectId),
 };
 
-refresh();
+showIntro(overlayRoot, () => {
+  audio.setMuted(false);
+  renderSoundToggle();
+  refresh();
+});

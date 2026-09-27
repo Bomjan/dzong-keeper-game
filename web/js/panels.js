@@ -15,6 +15,17 @@ const FINDING_TYPE_LABELS = {
 const TABS = ['findings', 'clues', 'suspects'];
 const TAB_LABELS = { findings: 'Findings', clues: 'Clues', suspects: 'Suspects' };
 
+const ACTION_ICONS = {
+  Move: '<svg viewBox="0 0 24 24"><path d="M4 12h13M13 6l6 6-6 6"/></svg>',
+  Inspect: '<svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M15 15l5 5"/></svg>',
+  Interview: '<svg viewBox="0 0 24 24"><path d="M4 5h16v10H9l-4 4v-4H4z"/></svg>',
+  Register: '<svg viewBox="0 0 24 24"><path d="M4 5.5c2-1 5-1 8 0v13c-3-1-6-1-8 0v-13z"/><path d="M20 5.5c-2-1-5-1-8 0v13c3-1 6-1 8 0v-13z"/></svg>',
+  Lock: '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  Accuse: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.4" r="0.9" fill="currentColor" stroke="none"/></svg>',
+};
+
+let lastMessage = null;
+
 function emptyNote(text) {
   const p = document.createElement('p');
   p.className = 'empty-note';
@@ -26,7 +37,11 @@ function makeActionButton(label, enabled, active, onClick) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = `action-btn${active ? ' active' : ''}`;
-  btn.textContent = label;
+  if (ACTION_ICONS[label]) btn.insertAdjacentHTML('afterbegin', ACTION_ICONS[label]);
+  const span = document.createElement('span');
+  span.className = 'btn-label';
+  span.textContent = label;
+  btn.appendChild(span);
   btn.disabled = !enabled;
   if (onClick) btn.addEventListener('click', onClick);
   return btn;
@@ -96,9 +111,14 @@ export function renderLeftRail(container, state, uiState, handlers) {
   container.appendChild(hint);
 
   const message = document.createElement('p');
-  message.className = 'message-line';
+  const messageChanged = state.message !== lastMessage;
+  message.className = messageChanged ? 'message-line message-enter' : 'message-line';
   message.textContent = state.message || '';
   container.appendChild(message);
+  if (messageChanged) {
+    lastMessage = state.message;
+    requestAnimationFrame(() => message.classList.remove('message-enter'));
+  }
 }
 
 // ------------------------------------------------------------- right rail
@@ -339,12 +359,72 @@ export function renderRegisterResults(list, results, roomsById) {
 
 // ----------------------------------------------------------------- modal
 
-export function showModal(overlayRoot, { title, body, actionLabel = 'Close', onAction }) {
+// ------------------------------------------------------------------ intro
+
+export function showIntro(overlayRoot, onStart) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'intro-backdrop';
+
+  const card = document.createElement('div');
+  card.className = 'intro-card';
+
+  const eyebrow = document.createElement('div');
+  eyebrow.className = 'intro-eyebrow';
+  eyebrow.textContent = 'Tshechu Festival — Third Day';
+  card.appendChild(eyebrow);
+
+  const h2 = document.createElement('h2');
+  h2.textContent = 'The Last Dzong Keeper';
+  card.appendChild(h2);
+
+  const p1 = document.createElement('p');
+  p1.textContent = 'You are the kunyer, caretaker of this dzong. While the tshechu draws pilgrims through its courtyards, something has been slipping out of its stores, unnoticed. Walk its rooms, question those who saw something, and work out where the intruder has been — before the festival ends and the trail goes cold.';
+  card.appendChild(p1);
+
+  const legend = document.createElement('div');
+  legend.className = 'intro-legend';
+  const entries = [
+    ['Move', 'Step into a lit, adjacent room'],
+    ['Inspect', 'Search the room you stand in'],
+    ['Interview', 'Question a witness where you stand'],
+    ['Register', 'Search the temple’s inventory'],
+    ['Lock', 'Bar a corridor shut'],
+    ['Accuse', 'Name the intruder — choose with care'],
+  ];
+  for (const [label, desc] of entries) {
+    const div = document.createElement('div');
+    const strong = document.createElement('strong');
+    strong.textContent = `${label}: `;
+    div.appendChild(strong);
+    div.appendChild(document.createTextNode(desc));
+    legend.appendChild(div);
+  }
+  card.appendChild(legend);
+
+  const p2 = document.createElement('p');
+  p2.textContent = 'Every step, search and question costs precious minutes before the tshechu ends. Spend them wisely.';
+  card.appendChild(p2);
+
+  const startBtn = document.createElement('button');
+  startBtn.type = 'button';
+  startBtn.className = 'intro-start-btn';
+  startBtn.textContent = 'Enter the Dzong';
+  startBtn.addEventListener('click', () => {
+    overlayRoot.replaceChildren();
+    onStart();
+  });
+  card.appendChild(startBtn);
+
+  backdrop.appendChild(card);
+  overlayRoot.replaceChildren(backdrop);
+}
+
+export function showModal(overlayRoot, { title, body, actionLabel = 'Close', onAction, variant = null }) {
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
 
   const modal = document.createElement('div');
-  modal.className = 'modal';
+  modal.className = variant ? `modal modal-${variant}` : 'modal';
 
   const h2 = document.createElement('h2');
   h2.textContent = title;
