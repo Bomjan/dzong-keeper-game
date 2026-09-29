@@ -1,14 +1,13 @@
 # The Last Dzong Keeper
 
-our group project for the programming course. a detective game set in a dzong during the tshechu festival.
+our group project for the ADSA course.
 you walk around the rooms, talk to witnesses and try to find the intruder before time runs out.
 
 
-## whats done
+## whats done for now
 
 - [x] map
 - [x] sound
-- [x] fake backend (`web/js/mock/`) so we can test without the java part
-- [ ] connect to the real java backend
+- [ ] connect to the java backend (game doesnt work without it, needs /api/*)
 - [ ] patrol thing in the ui
 - [ ] mobile layout is kinda broken

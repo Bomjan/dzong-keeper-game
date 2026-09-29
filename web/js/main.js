@@ -196,7 +196,7 @@ function openRegister() {
   render();
 
   const roomsById = new Map(currentState.rooms.map((r) => [r.id, r]));
-  // the mock has random delay so old searches can come back after new ones
+  // searches can come back in the wrong order so old ones could overwrite new ones
   // and mess up the list. this only lets the newest one through
   let latestRequestId = 0;
   openRegisterDrawer(overlayRoot, {

@@ -1,6 +1,4 @@
 // all the fetch stuff is in here
-// to use the real java backend delete the import below (it just turns on the fake one)
-import './mock/server.js';
 
 const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' };
 
