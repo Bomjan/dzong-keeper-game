@@ -1,11 +1,8 @@
-// Renders the dzong as SVG. Pure rendering + click dispatch — this file
-// never decides whether a move, lock or interview is valid. It only
-// forwards the id the player clicked; the server decides what happens.
-//
-// The SVG is built once and updated in place on every subsequent render
-// (rather than torn down and rebuilt) so that CSS transitions can animate
-// between states: the player token slides from room to room, sky colour
-// eases with the clock, badge counts pop when they change.
+// draws the dzong map with svg
+// this file doesnt check if a move is allowed, it just sends the id
+// of whatever u clicked and the server figures it out
+// we build the svg once and then just update it, otherwise the css
+// transitions dont work (spent like 2 hrs on this lol)
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PADDING = 105;
@@ -37,9 +34,7 @@ function pointsAttr(pts) {
   return pts.map((p) => `${p.x},${p.y}`).join(' ');
 }
 
-// Time-of-day colour ramp: the sky eases from festival daylight down to a
-// deep dusk as the clock runs out. Purely presentational — it reads the
-// same timeRemaining/timeTotal ratio the time bar already shows.
+// sky gets darker as time runs out, looks cool ngl
 const SKY_STOPS = [
   { at: 1.00, c: [237, 230, 218] },
   { at: 0.60, c: [231, 202, 160] },
@@ -64,12 +59,9 @@ function skyColor(ratio) {
   return `rgb(${last[0]}, ${last[1]}, ${last[2]})`;
 }
 
-// ---------------------------------------------------------- room footprints
-//
-// Every room is drawn as a small building rather than a bare circle, so the
-// map reads as a walled dzong compound instead of a node-and-edge diagram.
-// Offsets are in local units relative to the room's (x, y) ground point,
-// negative y being "up" (toward the roof).
+// ---- rooms ----
+// each room is a little building instead of a circle
+// numbers are offsets from the room x,y. negative y = up
 
 const FOOTPRINTS = {
   tower:      { halfW: 28, wallTop: -30, roofPeak: -78, base: 4, hitR: 42 },
@@ -163,7 +155,7 @@ function buildBuildingGlyph(kind) {
     return g;
   }
 
-  // Default single-storey building.
+  // normal building
   const fp = FOOTPRINTS.building;
   const w = fp.halfW;
   g.appendChild(svgEl('rect', { class: 'bldg-wall', x: -w, y: fp.wallTop, width: w * 2, height: -fp.wallTop + 4 }));
@@ -179,7 +171,7 @@ function buildBuildingGlyph(kind) {
   return g;
 }
 
-// ------------------------------------------------------------- background
+// ---- background ----
 
 function buildBackground(svg, bounds) {
   const bg = svgEl('g', { class: 'map-bg' });
@@ -198,8 +190,7 @@ function buildBackground(svg, bounds) {
   ];
   bg.appendChild(svgEl('polygon', { class: 'map-hills', points: pointsAttr(hillPts) }));
 
-  // The fortress wall: inset a little from the outer padding, with a
-  // whitewashed face, a maroon band and a run of merlons along the top.
+  // the big wall (white + red stripe + the bumps on top)
   const wallInset = 34;
   const wx = bounds.minX + wallInset;
   const wy = bounds.minY + wallInset * 0.75;
@@ -220,7 +211,7 @@ function buildBackground(svg, bounds) {
   }
   bg.appendChild(merlons);
 
-  // Paved courtyard ground, inside the wall.
+  // ground
   const groundInset = 10;
   const gx = wx + groundInset;
   const gy = wy + 14 + groundInset * 0.5;
@@ -246,7 +237,7 @@ function buildBackground(svg, bounds) {
   }
   bg.appendChild(tiles);
 
-  // A string of festival prayer flags strung across the courtyard.
+  // prayer flags!!
   const flagY = gy + gh * 0.14;
   const flagX1 = gx + gw * 0.12;
   const flagX2 = gx + gw * 0.88;
@@ -299,7 +290,7 @@ export function renderMap(container, state, viewState, callbacks) {
     container._mapView = view;
   }
 
-  // Keep the mutable flags the persistent listeners close over up to date.
+  // update flags so the listeners see the new values
   view.flags.lockModeActive = !!(viewState && viewState.lockModeActive);
   view.flags.interviewModeActive = !!(viewState && viewState.interviewModeActive);
   view.flags.adjacent = new Set(state.adjacent || []);
@@ -497,15 +488,14 @@ function movePlayerToken(view, state) {
   const fp = view.footprintByRoom.get(state.currentRoom);
   if (!room || !fp) return;
 
-  // Parked at the room's lower-left, clear of witness markers (which sit to
-  // the right) and the name label (just below).
+  // put player at bottom left so it doesnt cover the witnesses
   const tokenX = room.x - fp.halfW - 16;
   const tokenY = room.y + fp.base;
 
   if (view.lastRoomId === null) {
     view.playerToken.style.transition = 'none';
     view.playerToken.style.transform = `translate(${tokenX}px, ${tokenY}px)`;
-    // Force layout so the next transform change (if any) actually animates.
+    // this line makes the animation work, dont delete
     void view.playerToken.getBoundingClientRect();
     view.playerToken.style.transition = '';
   } else if (view.lastRoomId !== state.currentRoom) {

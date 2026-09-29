@@ -1,7 +1,4 @@
-/* ---------------------------------------------------------------------- *
- * The Last Dzong Keeper — visual shell.
- * Whitewashed walls, a deep red band, timber, gold ornament. No frameworks.
- * ---------------------------------------------------------------------- */
+/* styles for the game. no bootstrap or anything, all by hand */
 
 :root {
   --ink: #23201E;
@@ -12,13 +9,13 @@
   --surface: #FFFFFF;
   --line: #E4DDD4;
 
-  /* Supporting tones for finding types not covered by the core palette. */
+  /* extra colors for the finding types */
   --type-moved: #4B5A55;
   --type-substituted: #6E4B3A;
 
   --stage-bg: #EDE6DA;
 
-  /* The dzong compound itself: timber roofs and paved stone. */
+  /* colors for the dzong itself */
   --roof: #3B2E28;
   --roof-light: #55423A;
   --stone: #D3C6AC;
@@ -59,7 +56,7 @@ button {
   font-family: inherit;
 }
 
-/* -------------------------------------------------- layout skeleton --- */
+/* layout */
 
 .app {
   display: flex;
@@ -192,7 +189,7 @@ button {
   50% { opacity: 1; }
 }
 
-/* ------------------------------------------------------- left rail --- */
+/* left rail */
 
 .room-heading h2 {
   font-family: var(--font-serif);
@@ -334,7 +331,7 @@ button {
   transform: translateY(4px);
 }
 
-/* ------------------------------------------------------ right rail --- */
+/* right rail */
 
 .tabs {
   display: flex;
@@ -490,7 +487,7 @@ button {
   white-space: nowrap;
 }
 
-/* ---------------------------------------------------------- banner --- */
+/* banner */
 
 .banner {
   position: absolute;
@@ -538,7 +535,7 @@ button {
   z-index: 5;
 }
 
-/* --------------------------------------------------------- drawer --- */
+/* drawer */
 
 .drawer-backdrop {
   position: fixed;
@@ -621,7 +618,7 @@ button {
   margin-top: 2px;
 }
 
-/* ---------------------------------------------------------- modal --- */
+/* modal */
 
 .modal-backdrop {
   position: fixed;
@@ -684,7 +681,7 @@ button {
   font-size: 13px;
 }
 
-/* ------------------------------------------------------------ SVG --- */
+/* SVG */
 
 .map-sky {
   transition: fill 2.5s ease;
@@ -695,7 +692,7 @@ button {
   opacity: 0.06;
 }
 
-/* ---- the fortress wall & courtyard ground ---- */
+/* the fortress wall & courtyard ground */
 
 .wall-face {
   fill: var(--wall-white);
@@ -745,7 +742,7 @@ button {
 .flag-green { fill: #4C6B4F; }
 .flag-yellow { fill: #C79A3E; }
 
-/* ---- buildings ---- */
+/* buildings */
 
 .bldg-wall {
   fill: var(--wall-white);
@@ -811,8 +808,7 @@ button {
   opacity: 0.5;
 }
 
-/* Unvisited rooms read as dark, shuttered buildings — you haven't lit them
-   yet. Visited rooms are in full colour. */
+/* rooms u havent visited are dark */
 .room.unvisited .bldg-wall {
   fill: var(--muted);
   opacity: 0.45;
@@ -833,7 +829,7 @@ button {
   opacity: 1;
 }
 
-/* Lit windows in the room you currently occupy. */
+/* windows light up in current room */
 .room.current .bldg-window {
   fill: var(--gold);
 }
@@ -919,11 +915,11 @@ button {
   100% { transform: scale(1); }
 }
 
-/* ---- player token ---- */
+/* player token */
 
 .player-token {
   transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-  /* Decorative only — never let it sit on top of a witness marker's hit area. */
+  /* pointer-events none so it doesnt block clicking witnesses */
   pointer-events: none;
 }
 
@@ -951,7 +947,7 @@ button {
   fill: var(--card);
 }
 
-/* ---- paths between buildings ---- */
+/* paths between buildings */
 
 .path-wide {
   stroke: var(--stone);
@@ -1019,7 +1015,7 @@ button {
   display: block;
 }
 
-/* ---- witnesses ---- */
+/* witnesses */
 
 .witness-marker circle {
   fill: var(--gold);
@@ -1046,7 +1042,7 @@ button {
   50% { r: 9.5; }
 }
 
-/* --------------------------------------------------------- intro --- */
+/* intro */
 
 .intro-backdrop {
   position: fixed;
@@ -1141,7 +1137,7 @@ button {
   transform: scale(0.98);
 }
 
-/* -------------------------------------------------------- utility --- */
+/* utility */
 
 [hidden] {
   display: none !important;

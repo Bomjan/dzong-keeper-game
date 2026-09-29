@@ -1,10 +1,6 @@
-// Entry point: wires the DOM to api.js, map.js and panels.js.
-//
-// This module holds only the last state the server sent, plus purely
-// interface-level state (which tab is open, which arm-mode is active,
-// whether a request is in flight). It never computes a path, a diff, or a
-// time cost — every state-changing call re-fetches the full picture from
-// the server and re-renders from that alone.
+// main file, connects everything (api, map, panels)
+// we only keep the last state from the server + some ui stuff
+// (which tab is open, which mode etc). server does all the game logic
 
 import * as api from './api.js';
 import * as audio from './audio.js';
@@ -53,8 +49,8 @@ let busy = false;
 let lastEndModalPhase = null;
 
 const uiState = {
-  activeMode: null, // 'interview' | 'lock' | 'accuse' | null
-  activeTab: 'findings', // 'findings' | 'clues' | 'suspects'
+  activeMode: null, // interview, lock, accuse or null
+  activeTab: 'findings', // findings, clues or suspects
   hint: '',
   busy: false,
 };
@@ -101,9 +97,12 @@ function playActionSound(kind, prev, next) {
       break;
     case 'inspect': {
       const room = next.rooms.find((r) => r.id === next.currentRoom);
-      const prevRoom = prev && prev.rooms.find((r) => r.id === prev.currentRoom);
-      const found = room && prevRoom && room.anomalyCount > prevRoom.anomalyCount;
-      if (found) audio.playInspectFound(); else audio.playInspectEmpty();
+      const prevRoom = prev.rooms.find((r) => r.id === prev.currentRoom);
+      if (room.anomalyCount > prevRoom.anomalyCount) {
+        audio.playInspectFound();
+      } else {
+        audio.playInspectEmpty();
+      }
       break;
     }
     case 'interview':
@@ -111,8 +110,6 @@ function playActionSound(kind, prev, next) {
       break;
     case 'lock':
       audio.playLock();
-      break;
-    default:
       break;
   }
 }
@@ -161,8 +158,7 @@ async function runAccuse(suspectId) {
     uiState.activeMode = null;
     uiState.hint = '';
     hideBanner(bannerEls);
-    // The end-of-game modal (if any) and the accuse outcome modal would
-    // otherwise both fire on this render; let the outcome modal win.
+    // without this both modals show up at once, so this stops the end one
     lastEndModalPhase = currentState.phase;
     setBusy(false);
     render();
@@ -175,6 +171,7 @@ async function runAccuse(suspectId) {
     });
     return;
   } catch (err) {
+    console.log('accuse failed', err);
     audio.playError();
     showBanner(bannerEls, err.message, () => runAccuse(suspectId));
   }
@@ -200,9 +197,8 @@ function openRegister() {
   render();
 
   const roomsById = new Map(currentState.rooms.map((r) => [r.id, r]));
-  // Two searches (e.g. the initial empty-query load and the first debounced
-  // keystroke) can resolve out of order given the mock's randomised network
-  // delay. Only the response to the most recently issued query may render.
+  // the mock has random delay so old searches can come back after new ones
+  // and mess up the list. this only lets the newest one through
   let latestRequestId = 0;
   openRegisterDrawer(overlayRoot, {
     onClose: () => closeOverlay(overlayRoot),

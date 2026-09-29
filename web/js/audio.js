@@ -1,16 +1,14 @@
-// Small synthesized sound effects via the Web Audio API — nothing fetched
-// from anywhere. Every sound is a couple of oscillator blips shaped with a
-// gain envelope. Muted by default until the player opts in, and lazily
-// created on first use since AudioContext requires a user gesture.
+// sound effects, made with the web audio api so no mp3 files needed
+// its muted at the start because browsers block sound until u click something
 
 let ctx = null;
 let muted = true;
 
-function ensureContext() {
+function getCtx() {
   if (!ctx) {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return null;
-    ctx = new AudioCtx();
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    ctx = new AC();
   }
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
@@ -24,26 +22,24 @@ export function isMuted() {
   return muted;
 }
 
+// makes one beep. copied the envelope idea from a tutorial
 function tone({ freq, duration = 0.15, type = 'sine', gain = 0.07, glideTo = null, delay = 0 }) {
   if (muted) return;
-  const audioCtx = ensureContext();
-  if (!audioCtx) return;
-  const t0 = audioCtx.currentTime + delay;
-  const osc = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
+  const c = getCtx();
+  if (!c) return;
+  const t0 = c.currentTime + delay;
+  const osc = c.createOscillator();
+  const g = c.createGain();
   osc.type = type;
   osc.frequency.setValueAtTime(freq, t0);
   if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + duration);
   g.gain.setValueAtTime(0.0001, t0);
   g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
-  osc.connect(g).connect(audioCtx.destination);
+  osc.connect(g);
+  g.connect(c.destination);
   osc.start(t0);
   osc.stop(t0 + duration + 0.03);
-}
-
-export function playUnlock() {
-  ensureContext();
 }
 
 export function playClick() {
@@ -56,12 +52,12 @@ export function playMove() {
 }
 
 export function playInspectFound() {
-  tone({ freq: 523, duration: 0.13, type: 'sine', gain: 0.07 });
-  tone({ freq: 784, duration: 0.2, type: 'sine', gain: 0.06, delay: 0.11 });
+  tone({ freq: 523, duration: 0.13, gain: 0.07 });
+  tone({ freq: 784, duration: 0.2, gain: 0.06, delay: 0.11 });
 }
 
 export function playInspectEmpty() {
-  tone({ freq: 240, duration: 0.12, type: 'sine', gain: 0.04 });
+  tone({ freq: 240, duration: 0.12, gain: 0.04 });
 }
 
 export function playInterview() {
@@ -75,7 +71,11 @@ export function playLock() {
 }
 
 export function playAccuseCorrect() {
-  [523, 659, 784, 1046].forEach((freq, i) => tone({ freq, duration: 0.24, type: 'sine', gain: 0.07, delay: i * 0.12 }));
+  // little happy arpeggio
+  const notes = [523, 659, 784, 1046];
+  for (let i = 0; i < notes.length; i++) {
+    tone({ freq: notes[i], duration: 0.24, gain: 0.07, delay: i * 0.12 });
+  }
 }
 
 export function playAccuseWrong() {

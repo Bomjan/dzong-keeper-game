@@ -1,16 +1,10 @@
-// Fake backend for local development.
-//
-// Importing this module installs a `window.fetch` wrapper that intercepts
-// every `/api/...` request, mutates an in-memory copy of fixture.json, and
-// answers with the same shapes the real Java backend will use. Everything
-// else falls through to the real network fetch.
-//
-// To develop against the real backend instead, remove the import of this
-// file from api.js — that is the only change required.
+// fake backend so we can work on the frontend without the java part
+// it replaces fetch and answers /api/ stuff using fixture.json
+// when the real backend is done just remove the import in api.js
 
 const REAL_FETCH = window.fetch.bind(window);
 
-// Bump this above 0 to rehearse the error banner during development.
+// set this to more than 0 to test the error banner
 const MOCK_FAIL_RATE = 0;
 
 let fixturePromise = null;

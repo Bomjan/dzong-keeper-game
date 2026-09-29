@@ -1,70 +1,76 @@
-// The only file that talks to the server.
-//
-// To develop against the real Java backend instead of the fake one,
-// delete or comment out the import below — every function here already
-// calls the same-origin /api/* paths the backend will serve.
+// all the fetch stuff is in here
+// to use the real java backend delete the import below (it just turns on the fake one)
 import './mock/server.js';
 
-const FORM_HEADERS = { 'Content-Type': 'application/x-www-form-urlencoded' };
+const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' };
 
-async function unwrap(response) {
+async function handle(response) {
   if (!response.ok) {
-    let message = `Request failed (${response.status})`;
+    let msg = 'Request failed (' + response.status + ')';
     try {
       const body = await response.json();
-      if (body && body.message) message = body.message;
-    } catch {
-      // Body wasn't JSON; keep the generic message.
+      if (body.message) msg = body.message;
+    } catch (e) {
+      // not json, whatever
     }
-    throw new Error(message);
+    throw new Error(msg);
   }
   return response.json();
 }
 
 export async function getState() {
-  return unwrap(await fetch('/api/state'));
+  const res = await fetch('/api/state');
+  return handle(res);
 }
 
 export async function move(roomId) {
-  return unwrap(await fetch('/api/move', {
+  const res = await fetch('/api/move', {
     method: 'POST',
-    headers: FORM_HEADERS,
-    body: new URLSearchParams({ roomId }),
-  }));
+    headers: FORM,
+    body: new URLSearchParams({ roomId: roomId }),
+  });
+  return handle(res);
 }
 
 export async function inspect() {
-  return unwrap(await fetch('/api/inspect', { method: 'POST' }));
+  const res = await fetch('/api/inspect', { method: 'POST' });
+  return handle(res);
 }
 
 export async function interview(witnessId) {
-  return unwrap(await fetch('/api/interview', {
+  const res = await fetch('/api/interview', {
     method: 'POST',
-    headers: FORM_HEADERS,
-    body: new URLSearchParams({ witnessId }),
-  }));
+    headers: FORM,
+    body: new URLSearchParams({ witnessId: witnessId }),
+  });
+  return handle(res);
 }
 
 export async function searchRegister(query) {
-  return unwrap(await fetch(`/api/register?q=${encodeURIComponent(query)}`));
+  const res = await fetch('/api/register?q=' + encodeURIComponent(query));
+  return handle(res);
 }
 
+// TODO: nothing calls this yet, patrol thing isnt in the ui
 export async function getPatrol(fromId, toId) {
-  return unwrap(await fetch(`/api/patrol?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}`));
+  const res = await fetch('/api/patrol?from=' + encodeURIComponent(fromId) + '&to=' + encodeURIComponent(toId));
+  return handle(res);
 }
 
 export async function lockEdge(edgeId) {
-  return unwrap(await fetch('/api/lock', {
+  const res = await fetch('/api/lock', {
     method: 'POST',
-    headers: FORM_HEADERS,
-    body: new URLSearchParams({ edgeId }),
-  }));
+    headers: FORM,
+    body: new URLSearchParams({ edgeId: edgeId }),
+  });
+  return handle(res);
 }
 
 export async function accuse(suspectId) {
-  return unwrap(await fetch('/api/accuse', {
+  const res = await fetch('/api/accuse', {
     method: 'POST',
-    headers: FORM_HEADERS,
-    body: new URLSearchParams({ suspectId }),
-  }));
+    headers: FORM,
+    body: new URLSearchParams({ suspectId: suspectId }),
+  });
+  return handle(res);
 }

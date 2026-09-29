@@ -1,6 +1,5 @@
-// Renders the left rail, right rail, register drawer, banner and modal.
-// Every function here takes data and hands back nothing but DOM writes and
-// event wiring — no fetching, no game rules.
+// all the ui panels: left side, right side, register drawer, error banner, popups
+// these just put stuff on the page, no fetching in here
 
 const PHASE_LABELS = { FORENSIC: 'Forensic', PURSUIT: 'Pursuit', WON: 'Resolved', LOST: 'Failed' };
 
@@ -25,6 +24,7 @@ const ACTION_ICONS = {
 };
 
 let lastMessage = null;
+let oldTab = null; // was for animating tabs, not used anymore
 
 function emptyNote(text) {
   const p = document.createElement('p');
@@ -47,7 +47,7 @@ function makeActionButton(label, enabled, active, onClick) {
   return btn;
 }
 
-// -------------------------------------------------------------- left rail
+// ---- left side ----
 
 export function renderLeftRail(container, state, uiState, handlers) {
   container.replaceChildren();
@@ -121,7 +121,7 @@ export function renderLeftRail(container, state, uiState, handlers) {
   }
 }
 
-// ------------------------------------------------------------- right rail
+// ---- right side ----
 
 function roomName(rooms, roomId) {
   const room = rooms.find((r) => r.id === roomId);
@@ -138,33 +138,14 @@ function renderFindings(panel, findings, rooms) {
     item.className = 'finding-item';
     item.dataset.type = finding.type;
 
-    const titleRow = document.createElement('div');
-    titleRow.className = 'finding-title-row';
-    const name = document.createElement('span');
-    name.textContent = finding.itemName;
-    titleRow.appendChild(name);
-    const tag = document.createElement('span');
-    tag.className = 'finding-type-tag';
-    tag.textContent = FINDING_TYPE_LABELS[finding.type] || finding.type;
-    titleRow.appendChild(tag);
-    item.appendChild(titleRow);
-
+    let html = '<div class="finding-title-row"><span>' + finding.itemName + '</span>' +
+      '<span class="finding-type-tag">' + (FINDING_TYPE_LABELS[finding.type] || finding.type) + '</span></div>';
     if (finding.note) {
-      const note = document.createElement('div');
-      note.className = 'finding-note';
-      note.textContent = finding.note;
-      item.appendChild(note);
+      html += '<div class="finding-note">' + finding.note + '</div>';
     }
-
-    const meta = document.createElement('div');
-    meta.className = 'finding-meta';
-    const roomSpan = document.createElement('span');
-    roomSpan.textContent = roomName(rooms, finding.roomId);
-    meta.appendChild(roomSpan);
-    const timeSpan = document.createElement('span');
-    timeSpan.textContent = `${finding.estimatedTime} min`;
-    meta.appendChild(timeSpan);
-    item.appendChild(meta);
+    html += '<div class="finding-meta"><span>' + roomName(rooms, finding.roomId) + '</span>' +
+      '<span>' + finding.estimatedTime + ' min</span></div>';
+    item.innerHTML = html;
 
     panel.appendChild(item);
   }
@@ -179,28 +160,11 @@ function renderClues(panel, clues) {
     const item = document.createElement('div');
     item.className = 'clue-item';
 
-    const text = document.createElement('div');
-    text.className = 'clue-text';
-    text.textContent = `“${clue.text}”`;
-    item.appendChild(text);
-
     const pct = Math.round((clue.reliability || 0) * 100);
-    const meta = document.createElement('div');
-    meta.className = 'clue-meta';
-    const source = document.createElement('span');
-    source.textContent = clue.source;
-    meta.appendChild(source);
-    const track = document.createElement('div');
-    track.className = 'reliability-track';
-    const barFill = document.createElement('div');
-    barFill.className = 'reliability-fill';
-    barFill.style.width = `${pct}%`;
-    track.appendChild(barFill);
-    meta.appendChild(track);
-    const pctSpan = document.createElement('span');
-    pctSpan.textContent = `${pct}%`;
-    meta.appendChild(pctSpan);
-    item.appendChild(meta);
+    item.innerHTML = '<div class="clue-text">“' + clue.text + '”</div>' +
+      '<div class="clue-meta"><span>' + clue.source + '</span>' +
+      '<div class="reliability-track"><div class="reliability-fill" style="width:' + pct + '%"></div></div>' +
+      '<span>' + pct + '%</span></div>';
 
     panel.appendChild(item);
   }
@@ -262,7 +226,7 @@ export function renderRightRail(container, state, uiState, handlers) {
   container.appendChild(panel);
 }
 
-// ------------------------------------------------------------ error banner
+// ---- error banner ----
 
 export function showBanner(elements, message, onRetry) {
   const { banner, messageEl, retryBtn } = elements;
@@ -276,7 +240,7 @@ export function hideBanner(elements) {
   elements.retryBtn.onclick = null;
 }
 
-// --------------------------------------------------------- register drawer
+// ---- register ----
 
 export function openRegisterDrawer(overlayRoot, handlers) {
   const backdrop = document.createElement('div');
@@ -357,9 +321,7 @@ export function renderRegisterResults(list, results, roomsById) {
   }
 }
 
-// ----------------------------------------------------------------- modal
-
-// ------------------------------------------------------------------ intro
+// ---- intro popup + normal popup ----
 
 export function showIntro(overlayRoot, onStart) {
   const backdrop = document.createElement('div');
