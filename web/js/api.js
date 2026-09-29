@@ -6,7 +6,7 @@ let saved = null;
 
 async function loadData() {
   if (!saved) {
-    const res = await fetch('data/state.json');
+    const res = await fetch(new URL('../data/state.json', import.meta.url));
     if (!res.ok) throw new Error('Could not load data/state.json');
     saved = await res.json();
   }

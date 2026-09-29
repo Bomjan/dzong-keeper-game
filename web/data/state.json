@@ -1,0 +1,387 @@
+{
+  "state": {
+    "phase": "FORENSIC",
+    "timeRemaining": 460,
+    "timeTotal": 600,
+    "currentRoom": "r_utse",
+    "rooms": [
+      {
+        "id": "r_gate",
+        "name": "Main Gate",
+        "x": 450,
+        "y": 560,
+        "visited": true,
+        "lastInspectedAt": 40,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_court_w",
+        "name": "Western Courtyard",
+        "x": 270,
+        "y": 470,
+        "visited": false,
+        "lastInspectedAt": null,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_court_e",
+        "name": "Eastern Courtyard",
+        "x": 630,
+        "y": 470,
+        "visited": true,
+        "lastInspectedAt": 95,
+        "anomalyCount": 1
+      },
+      {
+        "id": "r_utse",
+        "name": "Utse",
+        "x": 450,
+        "y": 380,
+        "visited": true,
+        "lastInspectedAt": null,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_kuenrey",
+        "name": "Kuenrey",
+        "x": 450,
+        "y": 230,
+        "visited": false,
+        "lastInspectedAt": null,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_store_n",
+        "name": "Northern Store",
+        "x": 630,
+        "y": 300,
+        "visited": false,
+        "lastInspectedAt": null,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_store_s",
+        "name": "Southern Store",
+        "x": 270,
+        "y": 300,
+        "visited": false,
+        "lastInspectedAt": null,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_admin",
+        "name": "Administrative Wing",
+        "x": 130,
+        "y": 420,
+        "visited": false,
+        "lastInspectedAt": null,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_monks",
+        "name": "Monks' Quarters",
+        "x": 770,
+        "y": 420,
+        "visited": true,
+        "lastInspectedAt": 60,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_kitchen",
+        "name": "Kitchen",
+        "x": 150,
+        "y": 190,
+        "visited": false,
+        "lastInspectedAt": null,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_armory",
+        "name": "Armory",
+        "x": 750,
+        "y": 190,
+        "visited": false,
+        "lastInspectedAt": null,
+        "anomalyCount": 0
+      },
+      {
+        "id": "r_watchtower",
+        "name": "Watchtower",
+        "x": 450,
+        "y": 90,
+        "visited": false,
+        "lastInspectedAt": null,
+        "anomalyCount": 0
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_01",
+        "from": "r_gate",
+        "to": "r_court_w",
+        "cost": 3,
+        "locked": false
+      },
+      {
+        "id": "e_02",
+        "from": "r_gate",
+        "to": "r_court_e",
+        "cost": 3,
+        "locked": false
+      },
+      {
+        "id": "e_03",
+        "from": "r_court_w",
+        "to": "r_utse",
+        "cost": 4,
+        "locked": false
+      },
+      {
+        "id": "e_04",
+        "from": "r_court_e",
+        "to": "r_utse",
+        "cost": 4,
+        "locked": false
+      },
+      {
+        "id": "e_05",
+        "from": "r_court_w",
+        "to": "r_admin",
+        "cost": 2,
+        "locked": false
+      },
+      {
+        "id": "e_06",
+        "from": "r_court_e",
+        "to": "r_monks",
+        "cost": 2,
+        "locked": false
+      },
+      {
+        "id": "e_07",
+        "from": "r_court_w",
+        "to": "r_store_s",
+        "cost": 3,
+        "locked": false
+      },
+      {
+        "id": "e_08",
+        "from": "r_court_e",
+        "to": "r_store_n",
+        "cost": 3,
+        "locked": false
+      },
+      {
+        "id": "e_09",
+        "from": "r_utse",
+        "to": "r_kuenrey",
+        "cost": 3,
+        "locked": false
+      },
+      {
+        "id": "e_10",
+        "from": "r_store_s",
+        "to": "r_kitchen",
+        "cost": 2,
+        "locked": false
+      },
+      {
+        "id": "e_11",
+        "from": "r_store_n",
+        "to": "r_armory",
+        "cost": 2,
+        "locked": false
+      },
+      {
+        "id": "e_12",
+        "from": "r_kuenrey",
+        "to": "r_watchtower",
+        "cost": 2,
+        "locked": false
+      },
+      {
+        "id": "e_13",
+        "from": "r_admin",
+        "to": "r_store_s",
+        "cost": 2,
+        "locked": false
+      },
+      {
+        "id": "e_14",
+        "from": "r_monks",
+        "to": "r_store_n",
+        "cost": 2,
+        "locked": false
+      },
+      {
+        "id": "e_15",
+        "from": "r_kitchen",
+        "to": "r_admin",
+        "cost": 3,
+        "locked": false
+      },
+      {
+        "id": "e_16",
+        "from": "r_armory",
+        "to": "r_monks",
+        "cost": 3,
+        "locked": false
+      }
+    ],
+    "adjacent": [
+      "r_court_w",
+      "r_court_e",
+      "r_kuenrey"
+    ],
+    "findings": [
+      {
+        "id": "f_01",
+        "type": "EXTRA",
+        "roomId": "r_court_e",
+        "itemName": "Ceremonial mask, unlisted",
+        "estimatedTime": 90,
+        "note": "Not on the festival committee's list. Appeared sometime after the opening procession."
+      },
+      {
+        "id": "f_02",
+        "type": "EXPLAINED",
+        "roomId": "r_gate",
+        "itemName": "Broken latch",
+        "estimatedTime": 20,
+        "note": "Damage from the procession cart, confirmed by the gatekeeper. Not connected to the thefts."
+      }
+    ],
+    "witnesses": [
+      {
+        "id": "w_01",
+        "name": "Kinley",
+        "roomId": "r_court_e",
+        "interviewed": false
+      },
+      {
+        "id": "w_02",
+        "name": "Pemba",
+        "roomId": "r_store_n",
+        "interviewed": false
+      },
+      {
+        "id": "w_03",
+        "name": "Dorji",
+        "roomId": "r_monks",
+        "interviewed": true
+      }
+    ],
+    "clues": [
+      {
+        "id": "c_01",
+        "text": "The night watchman changed his rounds three nights before the festival began.",
+        "reliability": 0.6,
+        "source": "Dorji"
+      }
+    ],
+    "suspects": [
+      {
+        "id": "s_01",
+        "label": "Trader in a grey gho",
+        "eliminated": false
+      },
+      {
+        "id": "s_02",
+        "label": "Young monk on kitchen duty",
+        "eliminated": false
+      },
+      {
+        "id": "s_03",
+        "label": "Night watchman",
+        "eliminated": false
+      }
+    ],
+    "message": "The Utse stands quiet under the tshechu banners. Something has been taken from the stores."
+  },
+  "registerLedger": [
+    {
+      "id": "reg_01",
+      "itemName": "Butter lamp set (7-piece)",
+      "category": "Ritual",
+      "roomId": "r_store_n",
+      "custodian": "Store Keeper"
+    },
+    {
+      "id": "reg_02",
+      "itemName": "Butter lamp, single, brass",
+      "category": "Ritual",
+      "roomId": "r_kuenrey",
+      "custodian": "Head Monk"
+    },
+    {
+      "id": "reg_03",
+      "itemName": "Ceremonial mask, Black Hat",
+      "category": "Festival",
+      "roomId": "r_court_e",
+      "custodian": "Festival Committee"
+    },
+    {
+      "id": "reg_04",
+      "itemName": "Ceremonial mask, Stag",
+      "category": "Festival",
+      "roomId": "r_store_s",
+      "custodian": "Festival Committee"
+    },
+    {
+      "id": "reg_05",
+      "itemName": "Prayer wheel, hand-held",
+      "category": "Ritual",
+      "roomId": "r_store_s",
+      "custodian": "Store Keeper"
+    },
+    {
+      "id": "reg_06",
+      "itemName": "Prayer wheel, wall-mounted",
+      "category": "Ritual",
+      "roomId": "r_kuenrey",
+      "custodian": "Head Monk"
+    },
+    {
+      "id": "reg_07",
+      "itemName": "Thangka of Guru Rinpoche",
+      "category": "Ritual",
+      "roomId": "r_kuenrey",
+      "custodian": "Head Monk"
+    },
+    {
+      "id": "reg_08",
+      "itemName": "Thangka of Milarepa",
+      "category": "Ritual",
+      "roomId": "r_admin",
+      "custodian": "Archivist"
+    },
+    {
+      "id": "reg_09",
+      "itemName": "Ceremonial sword",
+      "category": "Festival",
+      "roomId": "r_armory",
+      "custodian": "Armory Keeper"
+    },
+    {
+      "id": "reg_10",
+      "itemName": "Kitchen ledger, current year",
+      "category": "Administrative",
+      "roomId": "r_kitchen",
+      "custodian": "Cook"
+    },
+    {
+      "id": "reg_11",
+      "itemName": "Watch bell",
+      "category": "Security",
+      "roomId": "r_watchtower",
+      "custodian": "Night Watchman"
+    },
+    {
+      "id": "reg_12",
+      "itemName": "Guest register, tshechu visitors",
+      "category": "Administrative",
+      "roomId": "r_admin",
+      "custodian": "Archivist"
+    }
+  ]
+}
