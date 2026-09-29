@@ -14,7 +14,6 @@ import {
   closeOverlay,
   renderRegisterResults,
   showModal,
-  showIntro,
 } from './panels.js';
 
 const leftRail = document.getElementById('left-rail');
@@ -250,8 +249,4 @@ const rightHandlers = {
   onAccuseSuspect: (suspectId) => runAccuse(suspectId),
 };
 
-showIntro(overlayRoot, () => {
-  audio.setMuted(false);
-  renderSoundToggle();
-  refresh();
-});
+refresh();

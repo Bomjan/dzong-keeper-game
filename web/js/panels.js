@@ -47,7 +47,7 @@ function makeActionButton(label, enabled, active, onClick) {
   return btn;
 }
 
-// ---- left side ----
+// left side
 
 export function renderLeftRail(container, state, uiState, handlers) {
   container.replaceChildren();
@@ -121,7 +121,7 @@ export function renderLeftRail(container, state, uiState, handlers) {
   }
 }
 
-// ---- right side ----
+//right side
 
 function roomName(rooms, roomId) {
   const room = rooms.find((r) => r.id === roomId);
@@ -226,7 +226,7 @@ export function renderRightRail(container, state, uiState, handlers) {
   container.appendChild(panel);
 }
 
-// ---- error banner ----
+// error banner
 
 export function showBanner(elements, message, onRetry) {
   const { banner, messageEl, retryBtn } = elements;
@@ -240,7 +240,7 @@ export function hideBanner(elements) {
   elements.retryBtn.onclick = null;
 }
 
-// ---- register ----
+//     register
 
 export function openRegisterDrawer(overlayRoot, handlers) {
   const backdrop = document.createElement('div');
@@ -321,65 +321,7 @@ export function renderRegisterResults(list, results, roomsById) {
   }
 }
 
-// ---- intro popup + normal popup ----
-
-export function showIntro(overlayRoot, onStart) {
-  const backdrop = document.createElement('div');
-  backdrop.className = 'intro-backdrop';
-
-  const card = document.createElement('div');
-  card.className = 'intro-card';
-
-  const eyebrow = document.createElement('div');
-  eyebrow.className = 'intro-eyebrow';
-  eyebrow.textContent = 'Tshechu Festival — Third Day';
-  card.appendChild(eyebrow);
-
-  const h2 = document.createElement('h2');
-  h2.textContent = 'The Last Dzong Keeper';
-  card.appendChild(h2);
-
-  const p1 = document.createElement('p');
-  p1.textContent = 'You are the kunyer, caretaker of this dzong. While the tshechu draws pilgrims through its courtyards, something has been slipping out of its stores, unnoticed. Walk its rooms, question those who saw something, and work out where the intruder has been — before the festival ends and the trail goes cold.';
-  card.appendChild(p1);
-
-  const legend = document.createElement('div');
-  legend.className = 'intro-legend';
-  const entries = [
-    ['Move', 'Step into a lit, adjacent room'],
-    ['Inspect', 'Search the room you stand in'],
-    ['Interview', 'Question a witness where you stand'],
-    ['Register', 'Search the temple’s inventory'],
-    ['Lock', 'Bar a corridor shut'],
-    ['Accuse', 'Name the intruder — choose with care'],
-  ];
-  for (const [label, desc] of entries) {
-    const div = document.createElement('div');
-    const strong = document.createElement('strong');
-    strong.textContent = `${label}: `;
-    div.appendChild(strong);
-    div.appendChild(document.createTextNode(desc));
-    legend.appendChild(div);
-  }
-  card.appendChild(legend);
-
-  const p2 = document.createElement('p');
-  p2.textContent = 'Every step, search and question costs precious minutes before the tshechu ends. Spend them wisely.';
-  card.appendChild(p2);
-
-  const startBtn = document.createElement('button');
-  startBtn.type = 'button';
-  startBtn.className = 'intro-start-btn';
-  startBtn.textContent = 'Enter the Dzong';
-  startBtn.addEventListener('click', () => {
-    overlayRoot.replaceChildren();
-    onStart();
-  });
-  card.appendChild(startBtn);
-
-  backdrop.appendChild(card);
-  overlayRoot.replaceChildren(backdrop);
-}
+// popup
 
 export function showModal(overlayRoot, { title, body, actionLabel = 'Close', onAction, variant = null }) {
   const backdrop = document.createElement('div');

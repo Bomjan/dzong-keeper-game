@@ -59,7 +59,7 @@ function skyColor(ratio) {
   return `rgb(${last[0]}, ${last[1]}, ${last[2]})`;
 }
 
-// ---- rooms ----
+// Rooms
 // each room is a little building instead of a circle
 // numbers are offsets from the room x,y. negative y = up
 
@@ -171,7 +171,7 @@ function buildBuildingGlyph(kind) {
   return g;
 }
 
-// ---- background ----
+// background
 
 function buildBackground(svg, bounds) {
   const bg = svgEl('g', { class: 'map-bg' });
@@ -237,7 +237,7 @@ function buildBackground(svg, bounds) {
   }
   bg.appendChild(tiles);
 
-  // prayer flags!!
+  // prayer flags
   const flagY = gy + gh * 0.14;
   const flagX1 = gx + gw * 0.12;
   const flagX2 = gx + gw * 0.88;
