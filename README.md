@@ -8,6 +8,6 @@ you walk around the rooms, talk to witnesses and try to find the intruder before
 
 - [x] map
 - [x] sound
-- [ ] connect to the java backend (game doesnt work without it, needs /api/*)
+- [ ] connect to the java backend (right now the page just shows data/state.json and move/inspect/etc say "not done yet")
 - [ ] patrol thing in the ui
 - [ ] mobile layout is kinda broken

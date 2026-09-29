@@ -1,74 +1,51 @@
-// all the fetch stuff is in here
+// data stuff. the java backend isnt done yet so for now we just
+// read a json file (data/state.json) and the actions dont do anything yet
+// TODO: switch these to fetch('/api/...') when the backend is ready
 
-const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' };
+let saved = null;
 
-async function handle(response) {
-  if (!response.ok) {
-    let msg = 'Request failed (' + response.status + ')';
-    try {
-      const body = await response.json();
-      if (body.message) msg = body.message;
-    } catch (e) {
-      // not json, whatever
-    }
-    throw new Error(msg);
+async function loadData() {
+  if (!saved) {
+    const res = await fetch('data/state.json');
+    if (!res.ok) throw new Error('Could not load data/state.json');
+    saved = await res.json();
   }
-  return response.json();
+  return saved;
+}
+
+function notDone(name) {
+  throw new Error(name + ' is not done yet, backend coming soon');
 }
 
 export async function getState() {
-  const res = await fetch('/api/state');
-  return handle(res);
-}
-
-export async function move(roomId) {
-  const res = await fetch('/api/move', {
-    method: 'POST',
-    headers: FORM,
-    body: new URLSearchParams({ roomId: roomId }),
-  });
-  return handle(res);
-}
-
-export async function inspect() {
-  const res = await fetch('/api/inspect', { method: 'POST' });
-  return handle(res);
-}
-
-export async function interview(witnessId) {
-  const res = await fetch('/api/interview', {
-    method: 'POST',
-    headers: FORM,
-    body: new URLSearchParams({ witnessId: witnessId }),
-  });
-  return handle(res);
+  const data = await loadData();
+  return data.state;
 }
 
 export async function searchRegister(query) {
-  const res = await fetch('/api/register?q=' + encodeURIComponent(query));
-  return handle(res);
+  const data = await loadData();
+  const q = query.toLowerCase();
+  return data.registerLedger.filter(function (entry) {
+    return entry.itemName.toLowerCase().includes(q) || entry.category.toLowerCase().includes(q);
+  });
 }
 
-// TODO: nothing calls this yet, patrol thing isnt in the ui
-export async function getPatrol(fromId, toId) {
-  const res = await fetch('/api/patrol?from=' + encodeURIComponent(fromId) + '&to=' + encodeURIComponent(toId));
-  return handle(res);
+export async function move(roomId) {
+  notDone('Move');
+}
+
+export async function inspect() {
+  notDone('Inspect');
+}
+
+export async function interview(witnessId) {
+  notDone('Interview');
 }
 
 export async function lockEdge(edgeId) {
-  const res = await fetch('/api/lock', {
-    method: 'POST',
-    headers: FORM,
-    body: new URLSearchParams({ edgeId: edgeId }),
-  });
-  return handle(res);
+  notDone('Lock');
 }
 
 export async function accuse(suspectId) {
-  const res = await fetch('/api/accuse', {
-    method: 'POST',
-    headers: FORM,
-    body: new URLSearchParams({ suspectId: suspectId }),
-  });
-  return handle(res);
+  notDone('Accuse');
 }
