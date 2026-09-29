@@ -13,10 +13,6 @@ async function loadData() {
   return saved;
 }
 
-function notDone(name) {
-  throw new Error(name + ' is not done yet, backend coming soon');
-}
-
 export async function getState() {
   const data = await loadData();
   return data.state;
@@ -30,22 +26,46 @@ export async function searchRegister(query) {
   });
 }
 
+// move is the only action that works for now
 export async function move(roomId) {
-  notDone('Move');
+  const state = (await loadData()).state;
+  const edge = state.edges.find(function (e) {
+    return !e.locked &&
+      ((e.from === state.currentRoom && e.to === roomId) || (e.to === state.currentRoom && e.from === roomId));
+  });
+  if (!edge || edge.cost > state.timeRemaining) {
+    return state;
+  }
+
+  state.currentRoom = roomId;
+  state.timeRemaining -= edge.cost;
+  const room = state.rooms.find(function (r) { return r.id === roomId; });
+  room.visited = true;
+  state.message = 'You walk to the ' + room.name + '.';
+
+  // work out which rooms are next to the new room
+  state.adjacent = [];
+  for (const e of state.edges) {
+    if (e.locked) continue;
+    if (e.from === roomId) state.adjacent.push(e.to);
+    if (e.to === roomId) state.adjacent.push(e.from);
+  }
+  return state;
 }
 
+// TODO: these dont do anything yet
 export async function inspect() {
-  notDone('Inspect');
+  return (await loadData()).state;
 }
 
 export async function interview(witnessId) {
-  notDone('Interview');
+  return (await loadData()).state;
 }
 
 export async function lockEdge(edgeId) {
-  notDone('Lock');
+  return (await loadData()).state;
 }
 
 export async function accuse(suspectId) {
-  notDone('Accuse');
+  return (await loadData()).state;
 }
