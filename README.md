@@ -1,44 +1,13 @@
 # The Last Dzong Keeper
 
-A dzong investigation game with a static browser view and a Java Spring Boot backend. The backend owns the game state and rules; the browser renders the state and sends actions to the controller.
-
-## Structure
-
-- `web/`: HTML, CSS, and JavaScript view, also deployed to GitHub Pages as a static preview.
-- `src/main/java/com/dzong/dzongkeeper/game/{model,service,controller}/`: game state, rules, and REST API.
-- `web/data/state.json`: initial game data and the GitHub Pages preview snapshot.
-
-Maven copies `web/` into the Spring Boot static resources at build time. Run the Spring app to use the interactive game. GitHub Pages hosts only the static preview and cannot run the Java backend.
+A browser investigation game built with Spring Boot and JavaScript.
 
 ## Run
 
-Install JDK 27 and set `JAVA_HOME`, then run:
+Requires JDK 27. Run `./mvnw spring-boot:run` (Windows: `.\mvnw.cmd spring-boot:run`), then open [localhost:8080](http://localhost:8080/).
 
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-Open `http://localhost:8080/`. Game state is stored in memory and resets when the server restarts. You can also restart a game with `POST /api/game/reset`.
-
-## Game API
-
-| Method | Path | Result |
-| --- | --- | --- |
-| GET | `/api/game` | Current game state |
-| POST | `/api/game/move/{roomId}` | Move to an adjacent room |
-| POST | `/api/game/inspect` | Inspect the current room |
-| POST | `/api/game/interview/{witnessId}` | Interview a witness in the current room |
-| POST | `/api/game/edges/{edgeId}/toggle` | Lock or unlock a corridor |
-| POST | `/api/game/accuse/{suspectId}` | Accuse a suspect |
-| GET | `/api/game/register?q=mask` | Search the register |
-| POST | `/api/game/reset` | Reset the game |
-
-Invalid actions return `400` as Problem Details JSON. There is one shared in-memory game session; multiple visitors to one server share it.
-
-The health check is available at `/api/health`.
+The game runs in memory and resets when the server restarts. GitHub Pages shows a static preview only.
 
 ## Test
 
-```powershell
-.\mvnw.cmd test
-```
+Run `./mvnw test` (Windows: `.\mvnw.cmd test`).
