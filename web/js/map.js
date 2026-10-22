@@ -294,6 +294,8 @@ export function renderMap(container, state, viewState, callbacks) {
   view.flags.lockModeActive = !!(viewState && viewState.lockModeActive);
   view.flags.interviewModeActive = !!(viewState && viewState.interviewModeActive);
   view.flags.adjacent = new Set(state.adjacent || []);
+  view.flags.currentRoom = state.currentRoom;
+  view.flags.interviewed = new Set((state.witnesses || []).filter((w) => w.interviewed).map((w) => w.id));
 
   const ratio = state.timeTotal > 0 ? state.timeRemaining / state.timeTotal : 1;
   view.sky.style.fill = skyColor(ratio);
@@ -333,7 +335,7 @@ export function renderMap(container, state, viewState, callbacks) {
   for (const witness of state.witnesses || []) {
     const el = view.witnessesById.get(witness.id);
     if (!el) continue;
-    const targetable = view.flags.interviewModeActive && !witness.interviewed;
+    const targetable = view.flags.interviewModeActive && !witness.interviewed && witness.roomId === state.currentRoom;
     el.g.classList.toggle('interviewed', !!witness.interviewed);
     el.g.classList.toggle('targetable', targetable);
   }
@@ -352,7 +354,7 @@ function buildStatic(container, state, callbacks) {
     preserveAspectRatio: 'xMidYMid meet',
   });
 
-  const flags = { lockModeActive: false, interviewModeActive: false, adjacent: new Set() };
+  const flags = { lockModeActive: false, interviewModeActive: false, adjacent: new Set(), currentRoom: null, interviewed: new Set() };
 
   const { sky } = buildBackground(svg, bounds);
 
@@ -453,7 +455,7 @@ function buildStatic(container, state, callbacks) {
       const g = svgEl('g', { class: 'witness-marker', 'data-witness-id': witness.id });
       const circle = svgEl('circle', { cx: wx, cy: wy, r: 7.5 });
       circle.addEventListener('click', () => {
-        if (!flags.interviewModeActive || witness.interviewed) return;
+        if (!flags.interviewModeActive || flags.interviewed.has(witness.id) || flags.currentRoom !== witness.roomId) return;
         onWitnessClick(witness.id);
       });
       g.appendChild(circle);

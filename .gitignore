@@ -1,18 +1,27 @@
-# IDE
 .idea/
-*.iml
 .vscode/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Java / Gradle / Maven (backend, added later)
-*.class
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+.sts4-cache/
+/nbproject/private/
+/nbbuild/
+/dist/
+/.nb-gradle/
 target/
 build/
 out/
 .gradle/
-
-# Logs / misc
+*.class
 *.log
+.DS_Store
+Thumbs.db
+HELP.md
+.mvn/wrapper/maven-wrapper.jar
+.remote-frontend/

@@ -1,6 +1,19 @@
-// data stuff. the java backend isnt done yet so for now we just
-// read a json file (data/state.json) and the actions dont do anything yet
-// TODO: switch these to fetch('/api/...') when the backend is ready
+// GitHub Pages is a static preview. When Spring serves this view, actions go
+// through its controller and the server owns the game state.
+export const isPreview = location.hostname.endsWith('github.io');
+
+async function request(path, method = 'GET') {
+  const response = await fetch(`/api/game${path}`, { method });
+  if (!response.ok) {
+    let message = `Request failed (${response.status})`;
+    try {
+      const error = await response.json();
+      message = error.detail || error.title || message;
+    } catch { /* A non-JSON server error still has the status message. */ }
+    throw new Error(message);
+  }
+  return response.json();
+}
 
 let saved = null;
 
@@ -14,11 +27,13 @@ async function loadData() {
 }
 
 export async function getState() {
+  if (!isPreview) return request('');
   const data = await loadData();
   return data.state;
 }
 
 export async function searchRegister(query) {
+  if (!isPreview) return request(`/register?q=${encodeURIComponent(query)}`);
   const data = await loadData();
   const q = query.toLowerCase();
   return data.registerLedger.filter(function (entry) {
@@ -28,6 +43,7 @@ export async function searchRegister(query) {
 
 // move is the only action that works for now
 export async function move(roomId) {
+  if (!isPreview) return request(`/move/${encodeURIComponent(roomId)}`, 'POST');
   const state = (await loadData()).state;
   const edge = state.edges.find(function (e) {
     return !e.locked &&
@@ -55,17 +71,21 @@ export async function move(roomId) {
 
 // TODO: these dont do anything yet
 export async function inspect() {
+  if (!isPreview) return request('/inspect', 'POST');
   return (await loadData()).state;
 }
 
 export async function interview(witnessId) {
+  if (!isPreview) return request(`/interview/${encodeURIComponent(witnessId)}`, 'POST');
   return (await loadData()).state;
 }
 
 export async function lockEdge(edgeId) {
+  if (!isPreview) return request(`/edges/${encodeURIComponent(edgeId)}/toggle`, 'POST');
   return (await loadData()).state;
 }
 
 export async function accuse(suspectId) {
+  if (!isPreview) return request(`/accuse/${encodeURIComponent(suspectId)}`, 'POST');
   return (await loadData()).state;
 }

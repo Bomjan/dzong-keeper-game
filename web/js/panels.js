@@ -90,20 +90,17 @@ export function renderLeftRail(container, state, uiState, handlers) {
   const actions = document.createElement('div');
   actions.className = 'actions';
 
-  // TODO: only move and register work right now, rest are turned off
-
   const hasAdjacent = (state.adjacent || []).length > 0;
-  const hasWitnesses = (state.witnesses || []).length > 0;
-  const hasUneliminatedSuspect = (state.suspects || []).some((s) => !s.eliminated);
 
   const notBusy = !uiState.busy;
 
   actions.appendChild(makeActionButton('Move', notBusy && !gameOver && hasAdjacent, false, handlers.onMove));
-  actions.appendChild(makeActionButton('Inspect', false, false, handlers.onInspect));
-  actions.appendChild(makeActionButton('Interview', false, uiState.activeMode === 'interview', handlers.onInterview));
+  const canAct = notBusy && !gameOver && !location.hostname.endsWith('github.io');
+  actions.appendChild(makeActionButton('Inspect', canAct, false, handlers.onInspect));
+  actions.appendChild(makeActionButton('Interview', canAct && (state.witnesses || []).some((w) => !w.interviewed), uiState.activeMode === 'interview', handlers.onInterview));
   actions.appendChild(makeActionButton('Register', notBusy, false, handlers.onRegister));
-  actions.appendChild(makeActionButton('Lock', false, uiState.activeMode === 'lock', handlers.onLock));
-  actions.appendChild(makeActionButton('Accuse', false, uiState.activeMode === 'accuse', handlers.onAccuse));
+  actions.appendChild(makeActionButton('Lock', canAct, uiState.activeMode === 'lock', handlers.onLock));
+  actions.appendChild(makeActionButton('Accuse', canAct && (state.suspects || []).some((s) => !s.eliminated), uiState.activeMode === 'accuse', handlers.onAccuse));
 
   container.appendChild(actions);
 
