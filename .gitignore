@@ -22,6 +22,4 @@ out/
 *.log
 .DS_Store
 Thumbs.db
-HELP.md
 .mvn/wrapper/maven-wrapper.jar
-.remote-frontend/

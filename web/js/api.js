@@ -69,7 +69,7 @@ export async function move(roomId) {
   return state;
 }
 
-// TODO: these dont do anything yet
+// These actions are available when Spring serves the page. GitHub Pages is a static preview.
 export async function inspect() {
   if (!isPreview) return request('/inspect', 'POST');
   return (await loadData()).state;
