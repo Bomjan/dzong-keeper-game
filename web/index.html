@@ -1,40 +1,399 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Last Dzong Keeper</title>
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280">
+  <title>The Last Dzong Keeper</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind Config -->
+  <script src="js/tailwind-config.js"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-<div class="app">
-  <header class="masthead">
-    <h1>The Last Dzong Keeper</h1>
-    <span class="subtitle">A record of the tshechu, kept by the kunyer</span>
-    <span class="masthead-spacer"></span>
-    <button class="sound-toggle" id="sound-toggle" type="button"></button>
-  </header>
+<body class="w-screen h-screen relative flex flex-col justify-center items-center bg-[#0F0B09]">
 
-  <div class="layout">
-    <aside class="rail rail-left" id="left-rail" aria-label="Kunyer's actions"></aside>
+  <!-- ========================================== -->
+  <!-- 1. MAIN MENU SCREEN                        -->
+  <!-- ========================================== -->
+  <div id="screen-main-menu" class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-[#0F0B09] bg-opacity-95 p-4">
+    <div class="text-center mb-10">
+      <h1 class="text-7xl font-cinzel font-black tracking-wider text-gold-gradient drop-shadow-lg mb-2">
+        THE LAST DZONG KEEPER
+      </h1>
+      <div class="w-full max-w-md h-[2px] bg-gradient-to-r from-transparent via-[#D8982D] to-transparent mx-auto my-3"></div>
+      <p class="font-cinzel tracking-[0.3em] text-lg text-[#E5B150] opacity-90">
+        DEFEND. UPGRADE. PROTECT.
+      </p>
+    </div>
 
-    <main class="stage" id="stage">
-      <div class="banner" id="error-banner" hidden>
-        <span class="banner-message" id="error-banner-message"></span>
-        <button class="banner-retry" id="error-banner-retry" type="button">Retry</button>
-      </div>
-      <div class="map-wrap" id="map-wrap">
-        <p class="loading-note" id="loading-note">Opening the dzong records&hellip;</p>
-      </div>
-      <div class="stage-vignette" id="stage-vignette"></div>
-    </main>
+    <!-- Main Menu Buttons -->
+    <div class="flex flex-col gap-4 w-80 font-cinzel">
+      <button onclick="showScreen('screen-mode-select')" 
+        class="py-3 px-6 bg-gradient-to-r from-[#2C1A10] via-[#4A2E1A] to-[#2C1A10] border-2 border-[#D8982D] text-[#FFF2A1] hover:text-white hover:border-[#FFF2A1] transition-all duration-200 rounded-md font-bold tracking-widest flex items-center justify-center gap-3 shadow-lg hover:scale-105 active:scale-95">
+        <i class="fa-solid fa-play text-xs text-[#D8982D]"></i> PLAY
+      </button>
 
-    <aside class="rail rail-right" id="right-rail" aria-label="Findings, clues and suspects"></aside>
+      <button onclick="openModal('modal-options')" 
+        class="py-3 px-6 bg-gradient-to-r from-[#2C1A10] via-[#4A2E1A] to-[#2C1A10] border-2 border-[#7A5229] text-[#E5B150] hover:border-[#D8982D] hover:text-[#FFF2A1] transition-all duration-200 rounded-md font-bold tracking-widest flex items-center justify-center gap-3 shadow-lg hover:scale-105 active:scale-95">
+        <i class="fa-solid fa-gear text-xs text-[#7A5229]"></i> OPTIONS
+      </button>
+
+      <button onclick="openModal('modal-how-to-play')" 
+        class="py-3 px-6 bg-gradient-to-r from-[#2C1A10] via-[#4A2E1A] to-[#2C1A10] border-2 border-[#7A5229] text-[#E5B150] hover:border-[#D8982D] hover:text-[#FFF2A1] transition-all duration-200 rounded-md font-bold tracking-widest flex items-center justify-center gap-3 shadow-lg hover:scale-105 active:scale-95">
+        <i class="fa-solid fa-circle-info text-xs text-[#7A5229]"></i> HOW TO PLAY
+      </button>
+
+      <button onclick="exitGame()" 
+        class="py-3 px-6 bg-gradient-to-r from-[#2C1A10] via-[#4A2E1A] to-[#2C1A10] border-2 border-[#7A5229] text-[#E5B150] hover:border-[#D8982D] hover:text-[#FFF2A1] transition-all duration-200 rounded-md font-bold tracking-widest flex items-center justify-center gap-3 shadow-lg hover:scale-105 active:scale-95">
+        <i class="fa-solid fa-xmark text-xs text-[#7A5229]"></i> EXIT
+      </button>
+    </div>
   </div>
-</div>
 
-<div id="overlay-root"></div>
 
-<script type="module" src="js/main.js"></script>
+  <!-- ========================================== -->
+  <!-- 2. MODE SELECT SCREEN (EASY, NORMAL, HARD)  -->
+  <!-- ========================================== -->
+  <div id="screen-mode-select" class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-[#0F0B09] p-6 hidden">
+    <!-- Top Bar with Back Button -->
+    <div class="absolute top-8 left-8 flex items-center gap-4">
+      <button onclick="showScreen('screen-main-menu')" 
+        class="py-2 px-5 bg-[#2C1A10] border border-[#D8982D] text-[#E5B150] font-cinzel font-bold text-sm hover:text-white hover:border-[#FFF2A1] transition rounded flex items-center gap-2">
+        <i class="fa-solid fa-arrow-left"></i> BACK
+      </button>
+    </div>
+
+    <h2 class="text-5xl font-cinzel font-bold text-gold-gradient tracking-wide mb-12">
+      SELECT DIFFICULTY
+    </h2>
+
+    <!-- 3 Difficulty Cards -->
+    <div class="grid grid-cols-3 gap-8 w-full max-w-4xl">
+      <!-- Easy Mode -->
+      <div onclick="selectDifficulty('Easy')" 
+        class="group cursor-pointer bg-gradient-to-b from-[#281B13] to-[#17100B] border-2 border-[#7A5229] hover:border-[#D8982D] rounded-xl p-6 flex flex-col items-center justify-between text-center transition-all duration-300 transform hover:-translate-y-2 hover:shadow-[0_0_20px_rgba(216,152,45,0.3)]">
+        <div class="text-[#E5B150] font-cinzel text-2xl font-bold mb-2 group-hover:text-[#FFF2A1]">EASY</div>
+        <div class="text-xs text-gray-400 mb-6 font-sans">Slower enemy waves, higher starting gold, lower enemy damage.</div>
+        <div class="flex gap-2 text-2xl mb-6">
+          <i id="star-easy-1" class="fa-solid fa-star text-[#E5B150]"></i>
+          <i id="star-easy-2" class="fa-solid fa-star text-[#E5B150]"></i>
+          <i id="star-easy-3" class="fa-solid fa-star text-[#E5B150]"></i>
+        </div>
+        <button class="w-full py-2 bg-[#4A2E1A] group-hover:bg-[#D8982D] group-hover:text-black font-cinzel font-bold rounded transition-colors text-sm">
+          START EASY
+        </button>
+      </div>
+
+      <!-- Normal Mode -->
+      <div onclick="selectDifficulty('Normal')" 
+        class="group cursor-pointer bg-gradient-to-b from-[#281B13] to-[#17100B] border-2 border-[#7A5229] hover:border-[#D8982D] rounded-xl p-6 flex flex-col items-center justify-between text-center transition-all duration-300 transform hover:-translate-y-2 hover:shadow-[0_0_20px_rgba(216,152,45,0.3)] relative">
+        <span class="absolute -top-3 bg-[#D8982D] text-black text-[10px] font-bold px-3 py-0.5 rounded-full font-cinzel">RECOMMENDED</span>
+        <div class="text-[#E5B150] font-cinzel text-2xl font-bold mb-2 group-hover:text-[#FFF2A1]">NORMAL</div>
+        <div class="text-xs text-gray-400 mb-6 font-sans">Standard enemy speed & health. Designed strategy balance.</div>
+        <div class="flex gap-2 text-2xl mb-6">
+          <i id="star-normal-1" class="fa-solid fa-star text-[#E5B150]"></i>
+          <i id="star-normal-2" class="fa-solid fa-star text-[#E5B150]"></i>
+          <i id="star-normal-3" class="fa-regular fa-star text-gray-600"></i>
+        </div>
+        <button class="w-full py-2 bg-[#4A2E1A] group-hover:bg-[#D8982D] group-hover:text-black font-cinzel font-bold rounded transition-colors text-sm">
+          START NORMAL
+        </button>
+      </div>
+
+      <!-- Hard Mode -->
+      <div onclick="selectDifficulty('Hard')" 
+        class="group cursor-pointer bg-gradient-to-b from-[#281B13] to-[#17100B] border-2 border-[#7A5229] hover:border-[#D8982D] rounded-xl p-6 flex flex-col items-center justify-between text-center transition-all duration-300 transform hover:-translate-y-2 hover:shadow-[0_0_20px_rgba(216,152,45,0.3)]">
+        <div class="text-[#E5B150] font-cinzel text-2xl font-bold mb-2 group-hover:text-[#FFF2A1]">HARD</div>
+        <div class="text-xs text-gray-400 mb-6 font-sans">Fast relentless slime surges! Precision tower placement needed.</div>
+        <div class="flex gap-2 text-2xl mb-6">
+          <i id="star-hard-1" class="fa-regular fa-star text-gray-600"></i>
+          <i id="star-hard-2" class="fa-regular fa-star text-gray-600"></i>
+          <i id="star-hard-3" class="fa-regular fa-star text-gray-600"></i>
+        </div>
+        <button class="w-full py-2 bg-[#4A2E1A] group-hover:bg-[#D8982D] group-hover:text-black font-cinzel font-bold rounded transition-colors text-sm">
+          START HARD
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- 3. GAMEPLAY SCREEN                         -->
+  <!-- ========================================== -->
+  <div id="screen-gameplay" class="absolute inset-0 flex flex-col z-0 hidden">
+    <!-- Top HUD Bar -->
+    <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-none">
+      <!-- Left Stats (Lives & Gold) -->
+      <div class="pointer-events-auto bg-[#1F1510] border-2 border-[#7A5229] rounded-lg px-4 py-2 flex items-center gap-6 shadow-2xl">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-heart text-red-500 text-xl"></i>
+          <span id="ui-lives" class="font-cinzel text-xl font-bold text-white">5</span>
+        </div>
+        <div class="h-6 w-[1px] bg-[#7A5229]"></div>
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-coins text-yellow-400 text-xl"></i>
+          <span id="ui-gold" class="font-cinzel text-xl font-bold text-yellow-300">150</span>
+        </div>
+      </div>
+
+      <!-- Center Wave Tracker -->
+      <div class="pointer-events-auto bg-[#1F1510] border-2 border-[#7A5229] rounded-lg px-6 py-1.5 text-center shadow-2xl">
+        <div class="text-[10px] font-cinzel text-[#E5B150] uppercase tracking-widest">WAVE</div>
+        <div class="font-cinzel text-2xl font-black text-white">
+          <span id="ui-wave-current">0</span> / <span id="ui-wave-max">5</span>
+        </div>
+      </div>
+
+      <!-- Right Action Controls -->
+      <div class="pointer-events-auto flex items-center gap-2">
+        <button id="btn-pause" onclick="togglePause()" 
+          class="w-10 h-10 bg-[#1F1510] border-2 border-[#7A5229] hover:border-[#D8982D] rounded-lg text-[#E5B150] flex items-center justify-center transition shadow-lg">
+          <i class="fa-solid fa-pause"></i>
+        </button>
+        <button id="btn-speed" onclick="toggleSpeed()" 
+          class="w-10 h-10 bg-[#1F1510] border-2 border-[#7A5229] hover:border-[#D8982D] rounded-lg text-[#E5B150] flex items-center justify-center transition shadow-lg">
+          <i class="fa-solid fa-forward"></i>
+        </button>
+        <button onclick="openModal('modal-options')" 
+          class="w-10 h-10 bg-[#1F1510] border-2 border-[#7A5229] hover:border-[#D8982D] rounded-lg text-[#E5B150] flex items-center justify-center transition shadow-lg">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Game Canvas -->
+    <canvas id="gameCanvas" class="w-full h-full block bg-[#142114]"></canvas>
+
+    <!-- Bottom Left Start Wave Button -->
+    <div class="absolute bottom-6 left-6 z-20">
+      <button id="btn-start-battle" onclick="startNextWave()" 
+        class="py-3 px-8 bg-gradient-to-r from-[#2C1A10] via-[#5C3A1E] to-[#2C1A10] border-2 border-[#D8982D] text-[#FFF2A1] font-cinzel font-bold text-lg rounded-lg hover:border-[#FFF2A1] hover:scale-105 active:scale-95 transition-all duration-200 shadow-2xl flex items-center gap-3">
+        <i class="fa-solid fa-play text-sm text-[#D8982D]"></i> START BATTLE
+      </button>
+    </div>
+
+    <!-- Bottom Right Tower Build Drawer Overlay (Popups when build spot is selected) -->
+    <div id="build-drawer" class="absolute bottom-6 right-6 z-20 bg-[#1F1510] border-2 border-[#7A5229] rounded-xl p-4 shadow-2xl flex flex-row items-center gap-4 hidden">
+      <div class="text-left border-r border-[#7A5229] pr-4">
+        <div class="font-cinzel text-[#E5B150] font-bold text-sm tracking-wider uppercase">BUILD TOWER</div>
+        <div class="text-[11px] text-gray-400 max-w-[150px]">Select a tower to construct at this location.</div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <!-- Archer Tower Option -->
+        <button onclick="buildTower('archer')" data-tower="archer" data-cost="50"
+          class="build-option flex items-center gap-2 p-2 bg-[#2C1A10] border border-[#7A5229] hover:border-[#D8982D] rounded text-left transition hover:bg-[#3D2517]">
+          <div class="w-8 h-8 rounded bg-emerald-700 flex items-center justify-center text-white text-xs">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 3c4 3 6 6 6 9s-2 6-6 9"/>
+              <path d="M16 3v18"/>
+              <path d="M2 12h17"/>
+              <path d="M16 9l3 3-3 3"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white font-cinzel">ARCHER</div>
+            <div class="text-[10px] text-yellow-400"><i class="fa-solid fa-coins"></i> 50</div>
+          </div>
+        </button>
+
+        <!-- Cannon Tower Option -->
+        <button onclick="buildTower('cannon')" data-tower="cannon" data-cost="100"
+          class="build-option flex items-center gap-2 p-2 bg-[#2C1A10] border border-[#7A5229] hover:border-[#D8982D] rounded text-left transition hover:bg-[#3D2517]">
+          <div class="w-8 h-8 rounded bg-red-800 flex items-center justify-center text-white text-xs">
+            <i class="fa-solid fa-bomb"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white font-cinzel">CANNON</div>
+            <div class="text-[10px] text-yellow-400"><i class="fa-solid fa-coins"></i> 100</div>
+          </div>
+        </button>
+
+        <!-- Wizard Tower Option -->
+        <button onclick="buildTower('mage')" data-tower="mage" data-cost="150"
+          class="build-option flex items-center gap-2 p-2 bg-[#2C1A10] border border-[#7A5229] hover:border-[#D8982D] rounded text-left transition hover:bg-[#3D2517]">
+          <div class="w-8 h-8 rounded bg-purple-700 flex items-center justify-center text-white text-xs">
+            <i class="fa-solid fa-fire"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white font-cinzel">WIZARD</div>
+            <div class="text-[10px] text-yellow-400"><i class="fa-solid fa-coins"></i> 150</div>
+          </div>
+        </button>
+
+        <!-- Guard Tower Option -->
+        <button onclick="buildTower('guard')" data-tower="guard" data-cost="75"
+          class="build-option flex items-center gap-2 p-2 bg-[#2C1A10] border border-[#7A5229] hover:border-[#D8982D] rounded text-left transition hover:bg-[#3D2517]">
+          <div class="w-8 h-8 rounded bg-blue-700 flex items-center justify-center text-white text-xs">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white font-cinzel">GUARD</div>
+            <div class="text-[10px] text-yellow-400"><i class="fa-solid fa-coins"></i> 75</div>
+          </div>
+        </button>
+      </div>
+
+      <button onclick="closeBuildDrawer()" class="ml-2 text-gray-400 hover:text-white text-sm p-1">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Existing Tower Upgrade / Sell Drawer Popup -->
+    <div id="tower-upgrade-drawer" class="absolute bottom-6 right-6 z-20 bg-[#1F1510] border-2 border-[#D8982D] rounded-xl p-4 shadow-2xl flex items-center gap-6 hidden">
+      <div id="upgrade-info" class="text-left">
+        <div id="upgrade-tower-name" class="font-cinzel text-[#E5B150] font-bold text-base">ARCHER TOWER</div>
+        <div id="upgrade-tower-level" class="text-xs text-gray-300">Level 1</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="upgradeSelectedTower()" class="py-2 px-4 bg-[#D8982D] hover:bg-[#FFF2A1] text-black font-cinzel font-bold text-xs rounded transition flex items-center gap-1">
+          <i class="fa-solid fa-arrow-up"></i> UPGRADE (<span id="upgrade-cost">75</span> <i class="fa-solid fa-coins"></i>)
+        </button>
+        <button onclick="sellSelectedTower()" class="py-2 px-4 bg-red-900/80 hover:bg-red-800 border border-red-600 text-white font-cinzel font-bold text-xs rounded transition flex items-center gap-1">
+          <i class="fa-solid fa-trash"></i> SELL (<span id="sell-value">25</span> <i class="fa-solid fa-coins"></i>)
+        </button>
+        <button onclick="closeUpgradeDrawer()" class="text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- MODAL 1: OPTIONS                           -->
+  <!-- ========================================== -->
+  <div id="modal-options" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm hidden">
+    <div class="w-full max-w-md bg-[#1F1510] border-2 border-[#7A5229] rounded-xl p-6 relative gold-box-shadow">
+      <button onclick="closeModal('modal-options')" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h3 class="font-cinzel text-2xl font-bold text-[#E5B150] border-b border-[#7A5229] pb-3 mb-6">
+        OPTIONS
+      </h3>
+
+      <div class="space-y-6">
+        <!-- Music Volume Slider -->
+        <div>
+          <div class="flex justify-between text-sm font-semibold mb-2">
+            <span>Music Volume</span>
+            <span id="val-music-vol" class="text-[#E5B150]">80%</span>
+          </div>
+          <input type="range" min="0" max="100" value="80" oninput="document.getElementById('val-music-vol').innerText=this.value+'%'" 
+            class="w-full accent-[#D8982D] bg-[#0F0B09] h-2 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- SFX Volume Slider -->
+        <div>
+          <div class="flex justify-between text-sm font-semibold mb-2">
+            <span>SFX Volume</span>
+            <span id="val-sfx-vol" class="text-[#E5B150]">100%</span>
+          </div>
+          <input type="range" min="0" max="100" value="100" oninput="document.getElementById('val-sfx-vol').innerText=this.value+'%'" 
+            class="w-full accent-[#D8982D] bg-[#0F0B09] h-2 rounded-lg cursor-pointer">
+        </div>
+      </div>
+
+      <button onclick="closeModal('modal-options')" 
+        class="w-full mt-8 py-3 bg-gradient-to-r from-[#2C1A10] via-[#5C3A1E] to-[#2C1A10] border border-[#D8982D] text-[#FFF2A1] font-cinzel font-bold tracking-widest rounded hover:bg-[#D8982D] hover:text-black transition duration-200">
+        APPLY SETTINGS
+      </button>
+      <button onclick="closeModal('modal-options'); showScreen('screen-mode-select')" 
+        class="w-full mt-2 py-3 bg-gradient-to-r from-[#2C1A10] via-[#5C3A1E] to-[#2C1A10] border border-[#D8982D] text-[#FFF2A1] font-cinzel font-bold tracking-widest rounded hover:bg-[#D8982D] hover:text-black transition duration-200">
+        SELECT LEVEL
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- MODAL 2: HOW TO PLAY                       -->
+  <!-- ========================================== -->
+  <div id="modal-how-to-play" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm hidden">
+    <div class="w-full max-w-lg bg-[#1F1510] border-2 border-[#7A5229] rounded-xl p-6 relative gold-box-shadow">
+      <button onclick="closeModal('modal-how-to-play')" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h3 class="font-cinzel text-2xl font-bold text-[#E5B150] border-b border-[#7A5229] pb-3 mb-4">
+        HOW TO PLAY
+      </h3>
+
+      <div class="space-y-3 text-sm text-gray-300 leading-relaxed max-h-[60vh] overflow-y-auto pr-2">
+        <p><strong class="text-[#E5B150]">Objective:</strong> Protect the central Dzong fortress from incoming waves of molten red slimes attacking along 4 paths!</p>
+        <p><strong class="text-[#E5B150]">Building:</strong> Click on circular build spots (<i class="fa-solid fa-plus text-[10px]"></i>) around paths to construct defense towers using Gold.</p>
+        <p><strong class="text-[#E5B150]">Upgrading:</strong> Click on any built tower to open its upgrade panel for higher damage & stats.</p>
+        <p><strong class="text-[#E5B150]">Guard Towers:</strong> Guard Towers summon armed Maroon Warriors with curved swords directly onto the road to block slimes in combat!</p>
+        <p><strong class="text-[#E5B150]">Waves:</strong> Press 'START BATTLE' when you're ready to spawn enemies. If slimes reach the Dzong base, you lose health!</p>
+
+        <!-- Towers Icon Legend Bar -->
+        <div class="mt-4 p-3 bg-[#140E0A] rounded-lg border border-[#7A5229] grid grid-cols-4 gap-2 text-center text-xs">
+          <div class="flex flex-col items-center">
+            <svg class="w-8 h-8 text-emerald-400 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 3c4 3 6 6 6 9s-2 6-6 9"/>
+              <path d="M16 3v18"/>
+              <path d="M2 12h17"/>
+              <path d="M16 9l3 3-3 3"/>
+            </svg>
+            <span class="font-bold text-white">Archer</span>
+            <span class="text-[10px] text-gray-400">(Fast Target)</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <i class="fa-solid fa-bomb text-red-400 text-2xl mb-2"></i>
+            <span class="font-bold text-white">Cannon</span>
+            <span class="text-[10px] text-gray-400">(Heavy Blast)</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <i class="fa-solid fa-fire text-purple-400 text-2xl mb-2"></i>
+            <span class="font-bold text-white">Wizard</span>
+            <span class="text-[10px] text-gray-400">(Purple Fireball)</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <i class="fa-solid fa-shield-halved text-blue-400 text-2xl mb-2"></i>
+            <span class="font-bold text-white">Guard</span>
+            <span class="text-[10px] text-gray-400">(Warrior Summon)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- MODAL 3: GAME OVER / VICTORY MODAL          -->
+  <!-- ========================================== -->
+  <div id="modal-game-end" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md hidden">
+    <div class="w-full max-w-md bg-[#1F1510] border-2 border-[#D8982D] rounded-xl p-8 text-center gold-box-shadow">
+      <div id="end-title" class="font-cinzel text-4xl font-black text-gold-gradient mb-2">VICTORY!</div>
+      <p id="end-subtitle" class="text-sm text-gray-300 mb-6">You successfully defended the Dzong fortress!</p>
+      
+      <!-- Earned Stars Display -->
+      <div id="end-stars" class="flex justify-center gap-3 text-3xl mb-8">
+        <i class="fa-solid fa-star text-[#E5B150]"></i>
+        <i class="fa-solid fa-star text-[#E5B150]"></i>
+        <i class="fa-solid fa-star text-[#E5B150]"></i>
+      </div>
+
+      <div class="flex gap-4">
+        <button onclick="returnToLevelSelect()" 
+          class="flex-1 py-3 bg-[#2C1A10] border border-[#7A5229] hover:border-[#D8982D] text-[#E5B150] font-cinzel font-bold rounded transition text-sm">
+          SELECT LEVEL
+        </button>
+        <button onclick="restartCurrentGame()" 
+          class="flex-1 py-3 bg-[#D8982D] hover:bg-[#FFF2A1] text-black font-cinzel font-bold rounded transition text-sm">
+          PLAY AGAIN
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
 </body>
 </html>
