@@ -1,33 +1,24 @@
-/*
-Plan only. This file does not provide a working feature.
+package com.dzong.dzongkeeper.towerdefense.engine;
 
-Responsibility
-Plan waves, schedule their spawn events, and create enemies when due.
+import com.dzong.dzongkeeper.towerdefense.model.*;
+import com.dzong.dzongkeeper.towerdefense.structures.SpawnMinHeap;
 
-Information to store or receive later
-Wave definitions, paths, enemy settings, SpawnMinHeap, a sequence counter,
-and access to a unique enemy ID source. Receive the current simulation tick.
-
-Implementation steps
-1. Decide the number of enemies and their settings for each wave.
-2. Convert delays into due simulation ticks relative to the wave start.
-3. Create a SpawnEvent for every enemy, with its path and a sequence number.
-4. Insert all events into SpawnMinHeap, including those with equal times.
-5. During a tick, remove events while the earliest due tick is at most now.
-6. Create each Enemy with a unique ID and register it through GameEngine
-   in both GameState's active list and EnemyHashTable.
-7. Report whether pending events remain so GameEngine can detect wave end.
-
-Works with
-GameEngine supplies tick and wave changes. SpawnMinHeap orders SpawnEvent.
-GamePath supplies routes. Enemy is created from the planned settings.
-GameState and EnemyHashTable receive every spawned enemy together.
-
-Example
-A wave starting at tick 50 has delays 0, 2, and 2.
-At tick 52, both events due at 52 must spawn, in sequence order.
-
-Cases to test later
-An empty wave, equal due times, overdue events, all due events in one tick,
-invalid routes, unique IDs across waves, and preventing a wave being scheduled twice.
-*/
+public final class WaveManager {
+    public static final int TOTAL_WAVES=3;
+    private final SpawnMinHeap pending=new SpawnMinHeap();
+    private long sequence;
+    private int lastWave, nextEnemyId=1;
+    public int pending() { return pending.size(); }
+    public void schedule(int wave,long tick,GamePath path) {
+        if (wave!=lastWave+1 || wave>TOTAL_WAVES || tick<0 || path==null || pending()>0)
+            throw new IllegalArgumentException("Wave cannot be scheduled");
+        for (int i=0;i<4+wave*2;i++)
+            pending.add(new SpawnEvent(tick+1+(i/2)*3,sequence++,path,16+wave*8,0.7+wave*0.1,12));
+        lastWave=wave;
+    }
+    public Enemy spawnDue(long tick) {
+        if (pending.peek()==null || pending.peek().dueTick()>tick) return null;
+        SpawnEvent event=pending.poll();
+        return new Enemy(nextEnemyId++,event.health(),event.speed(),event.reward(),event.path());
+    }
+}

@@ -1,30 +1,25 @@
-/*
-Plan only. This file does not provide a working feature.
+package com.dzong.dzongkeeper.towerdefense.model;
 
-Responsibility
-Describe one tower that attacks enemies near its position.
-
-Information to store later
-Its ID, type, position, level, range, damage, and attack cooldown.
-Range is the greatest attack distance. Cooldown is the wait between shots.
-Store attack timing in simulation ticks, not browser time.
-
-Implementation steps
-1. Choose tower types and their starting values and costs.
-2. Validate the position and assign a tower ID.
-3. Decide how to record when the next attack is ready.
-4. Define how upgrades change level, range, damage, and cooldown.
-5. Let GameEngine handle purchases, upgrades, sales, and firing.
-
-Works with
-GameState holds towers. GameEngine checks costs and attack readiness.
-TargetSelector chooses an Enemy. Projectile carries the shot's damage.
-
-Example
-An archer tower at (4, 3) has range 5 and damage 10.
-With a cooldown of 3 ticks, a shot at tick 8 permits the next at tick 11.
-
-Cases to test later
-An enemy exactly at the range boundary, no target, insufficient gold,
-maximum level, invalid position, repeated sale, and pause during cooldown.
-*/
+public final class Tower {
+    public static final int COST=40, UPGRADE_COST=30, MAX_LEVEL=3;
+    private final int id;
+    private final GamePath.Point position;
+    private int level=1;
+    private long nextFireTick;
+    public Tower(int id,double x,double y) {
+        if (id<=0) throw new IllegalArgumentException("Invalid tower ID");
+        this.id=id; position=new GamePath.Point(x,y);
+    }
+    public int getId() { return id; }
+    public int getLevel() { return level; }
+    public GamePath.Point position() { return position; }
+    public double range() { return 7+level; }
+    public int damage() { return 8+level*4; }
+    public int refund() { return (COST+(level-1)*UPGRADE_COST)/2; }
+    public boolean ready(long tick) { return tick>=nextFireTick; }
+    public void fired(long tick) { nextFireTick=tick+2; }
+    public void upgrade() {
+        if (level==MAX_LEVEL) throw new IllegalArgumentException("Tower already at maximum level");
+        level++;
+    }
+}

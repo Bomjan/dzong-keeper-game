@@ -1,171 +1,125 @@
-# DSA tower-defense implementation plan
+# DSA implementation and mid-review demo
 
-These files are a plan, not working features. DSA means data structures and
-algorithms: ways to store information and process it. Every new Java file
-contains only a block comment. There are no package declarations, classes,
-fields, constructors, or methods yet. The folder path reserves the future
-`com.dzong.dzongkeeper.towerdefense` package and its subpackages.
+The Java tower-defense implementation is runnable under
+`src/main/java/com/dzong/dzongkeeper/towerdefense/`. It has no Spring dependencies.
+The investigation API and browser game are separate from this console demo.
 
-## Repository inspection and scope
+## Run the console
 
-No `AGENTS.md` repository instructions were found in the repository or its
-ancestor directories. The README describes the investigation game and its
-Spring Boot run and test commands. The Maven build targets Java 27 and serves
-the existing `web/` directory as static resources.
+From the repository root, with the project's JDK 27 installed:
 
-The existing Java investigation backend is under `game/controller`,
-`game/model`, and `game/service`. It includes `GameController`, `GameSession`,
-`Accusation`, and `GameService`. Its session state is investigation data,
-not an equivalent Java tower-defense model. The application entry point,
-health controller, resources, and existing API tests remain as they are.
-
-There are no equivalent Java files for the 14 planned files. There is a
-conceptual overlap with the browser game: `web/js/main.js` already manages
-towers, enemies, projectiles, resources, and waves. `web/js/api.js` also
-contains investigation API calls. These browser files are preserved.
-Changing browser code or connecting the new simulation to it is outside this
-task. Do not treat this plan as an integration or replacement of either game.
-
-## Proposed folder tree
-
-```text
-src/main/java/com/dzong/dzongkeeper/towerdefense/
-├── model/
-│   ├── Enemy.java
-│   ├── Tower.java
-│   ├── Projectile.java
-│   ├── GamePath.java
-│   ├── SpawnEvent.java
-│   ├── GameResult.java
-│   └── GameState.java
-├── structures/
-│   ├── EnemyHashTable.java
-│   ├── SpawnMinHeap.java
-│   └── ScoreAvlTree.java
-├── engine/
-│   ├── GameEngine.java
-│   ├── WaveManager.java
-│   └── TargetSelector.java
-└── ui/
-    └── ConsoleGame.java
-
-docs/
-└── dsa-implementation-plan.md
+```sh
+bash scripts/run-console.sh
 ```
 
-`model` describes the game information: enemies, towers, shots, routes,
-scheduled arrivals, completed results, and the current simulation state.
-A path is an ordered list of points. It does not need graph algorithms.
+The script compiles only the tower-defense package into `target/console-classes`
+using `javac`, then launches `ConsoleGame`. Maven, a server, and network access
+are unnecessary. In an IDE, run `ConsoleGame.main(String[] args)`.
 
-`structures` holds the three DSA exercises. The hash table finds enemies by
-ID. The min-heap keeps the earliest spawn event first. The AVL tree keeps
-results ordered and balanced. Balanced means that neither side of the tree
-becomes much taller than the other.
+On Windows PowerShell, compile and run directly:
 
-`engine` applies rules and coordinates each simulation update. It schedules
-waves, chooses targets, handles player actions, and completes games.
+```powershell
+New-Item -ItemType Directory -Force target/console-classes | Out-Null
+$sources = Get-ChildItem src/main/java/com/dzong/dzongkeeper/towerdefense -Recurse -Filter *.java | ForEach-Object FullName
+javac -d target/console-classes $sources
+java -cp target/console-classes com.dzong.dzongkeeper.towerdefense.ui.ConsoleGame
+```
 
-`ui` provides a text interface in the terminal. It sends commands to the
-engine and displays state before any browser integration.
+## Review demonstration
 
-## Flow of information
+Enter one command per line:
 
-1. `ConsoleGame` receives player commands and passes valid input to
-   `GameEngine`. The engine checks game rules before changing `GameState`.
-2. `WaveManager` creates `SpawnEvent` entries from wave rules and `GamePath`
-   routes. `SpawnMinHeap` orders them by due tick and then sequence number.
-3. On each tick, due events create `Enemy` objects. The engine adds each enemy
-   to the active list and `EnemyHashTable` together. Enemy IDs must be unique.
-4. Enemies move along their paths. `TargetSelector` scans the active list for
-   the nearest eligible enemy within each ready `Tower`'s range. The first
-   version uses this simple scan.
-5. Towers fire `Projectile` objects. Each shot carries a target enemy ID.
-   The hash table resolves that ID before movement or damage is applied.
-6. The engine removes defeated and escaped enemies from the list and table.
-   It preserves their outcome long enough to pay gold once for each defeat
-   or subtract lives once for each escape. Console output reads the new state.
-7. When the game finishes, the engine creates one `GameResult` and inserts
-   it into `ScoreAvlTree`. The console can display the highest scores.
+```text
+build 5 3
+build 10 5
+build 15 9
+wave
+tick
+inspect
+pause
+tick 10
+status
+resume
+tick 60
+wave
+tick 60
+wave
+tick 60
+scores
+new
+scores
+quit
+```
 
-The active enemy list supports movement and target scans. The hash table
-supports finding one enemy by ID. Both must describe the same active enemies.
-The leaderboard uses completed results rather than changing game state.
+This shows construction, simultaneous spawns, movement, targeting, pause,
+three completed waves, victory, and a leaderboard retained across new games.
+For the short version, omit the first `tick`, `inspect`, and pause/resume steps.
+Three towers at the suggested positions win with 3 lives, 22 kills, and score 580.
+Start a new game and enter `wave`, `tick 100` without towers to demonstrate defeat.
+Use `help` for all commands. End-of-input also exits cleanly.
 
-## Tick order and rules to preserve
+## Data structures built from scratch
 
-Simulation ticks control game time. A tick is one simulation update.
-Spawns, movement, and attack cooldowns use ticks rather than browser timers.
+| Implementation | Role | Time complexity |
+| --- | --- | --- |
+| `Array<T>` | Active enemies, towers, projectiles, heap storage, leaderboard output | Index O(1), append amortized O(1), indexed insert/delete O(n) |
+| `EnemyHashTable` | Enemy ID lookup for projectile targets | Expected O(1), worst O(n); rehash O(n) |
+| `SpawnMinHeap` | Earliest scheduled spawn first | Add/remove O(log n), peek O(1) |
+| `ScoreAvlTree` | Balanced score leaderboard with full-key lookup | Tree insert/lookup O(log n), top k O(log n + k) |
 
-1. Stop immediately if the game is paused or finished.
-2. Advance the simulation tick.
-3. Spawn every enemy whose event is due.
-4. Move enemies along their paths.
-5. Let ready towers choose targets and fire.
-6. Move projectiles and apply hits to targets that are still alive.
-7. Remove dead or escaped enemies from both the active list and the hash table.
-8. Award gold once per defeated enemy and subtract lives once per escaped enemy.
-9. Check whether the wave or game has ended.
-10. Add one result to the leaderboard when the game finishes.
+The hash table handles collisions with manually linked nodes, grows above 75%
+load, and rehashes entries. The heap sifts up after insertion and sifts down
+after root removal. Its key is `(dueTick, sequence)` so equal times retain
+all events. The AVL tree implements LL, RR, LR, and RL rotations and updates
+heights after rotations. Its key is `(score, resultId)` so equal scores survive.
+Duplicate result-ID validation is a separate O(n) traversal, making the overall
+public AVL `add` operation O(n). AVL deletion is outside this demo.
 
-An enemy that reaches the Dzong during movement is escaped. It cannot then
-be targeted or hit. A defeated enemy cannot pay a second reward. A wave ends
-only when no scheduled spawns or active enemies remain. Victory requires
-the final wave to end. Zero lives means defeat. Further ticks must leave a
-finished game unchanged, including its single leaderboard submission.
+No `ArrayList`, `HashMap`, `PriorityQueue`, `TreeMap`, library sorting, or collection
+implementation is used in production tower-defense code. Primitive/object Java
+arrays, `System.arraycopy`, mathematical helpers, text I/O, and `Scanner` are
+standard Java facilities used by the implementation. Reference collections occur
+only in tests to compare results independently.
 
-Equal spawn times must not lose events. Compare due ticks first and unique
-sequence numbers second. Equal scores must not lose results. Compare scores
-first and unique result IDs second. Keep completed result keys unchanged.
-The scoring formula still needs to be decided; sample scores in comments
-do not define it. AVL deletion is a future extension.
+## Algorithms and game rules
 
-## Implementation order
+- The path is a polyline: (0,0) to (12,0) to the Dzong at (12,12).
+  Position interpolation scans segments in O(p), where p is the number of points.
+  No graph search is needed for this fixed route.
+- Target selection scans active enemies for the nearest eligible target in
+  O(e) per ready tower. Distance ties choose the smaller enemy ID.
+- Start with 120 gold and 5 lives. A tower costs 40; upgrades cost 30, up to
+  level 3. Sale refunds half the total investment. Towers must be off the path,
+  within coordinates [0,20], and at least one unit apart.
+- At level L, range is 7+L and damage is 8+4L. Towers fire every two ticks.
+  Projectiles travel four units per tick and hit at most once.
+- Wave w has 4+2w enemies with health 16+8w, speed 0.7+0.1w, and reward 12.
+  Pairs spawn at delays 1, 4, 7, etc. Each wave starts with `wave`.
+- Tick order: spawn all due enemies, move enemies, fire towers, move/hit shots,
+  remove defeated/escaped enemies from both structures, settle rewards/lives,
+  then check completion. An escaped enemy cannot subsequently be hit.
+- Paused games, finished games, and intervals between waves freeze simulation
+  time. Building and upgrading during a pause are allowed.
+- An escape costs one life. Zero lives is defeat. Clearing all three waves with
+  at least one life is victory. Completed games are frozen and submitted once.
+- Score is `kills*10 + completedWaves*100 + remainingLives*20` for both outcomes.
+  Results are immutable. New games reset resources and preserve the shared AVL
+  leaderboard. Scores are in memory and disappear when the console exits.
 
-Follow this order: **basic playable rules → enemy hash table → spawn heap →
-AVL leaderboard → console polish and testing**.
+The engine uses reverse-index cleanup so array deletion cannot skip entries.
+Indexed array removals may shift O(e) elements each, making a tick O(e²) in the
+worst case, in addition to targeting and projectile work. This is adequate for
+these small waves and is an explicit tradeoff of the custom ordered array.
 
-1. **Basic playable rules.** First agree on starting gold and lives, tower
-   prices, upgrades, sale refunds, movement units, cooldowns, waves, and
-   victory. Implement the models and a small manual console loop. Use simple
-   standard lists and scans initially. Establish one playable path, one tower
-   type, and one wave before expanding the rules.
-2. **Enemy hash table.** Implement collisions, insertion, lookup, removal,
-   and resizing. Replace temporary enemy ID scans with the table. Check that
-   it stays consistent with the active list after every update.
-3. **Spawn heap.** Implement insertion, upward movement, earliest removal,
-   and downward movement. Replace temporary spawn scheduling with the heap.
-   Process every due event, including ties and overdue events.
-4. **AVL leaderboard.** Decide the scoring formula. Implement ordinary BST
-   insertion, height updates, balance factors, all four rotation cases,
-   full-key lookup, and highest-score traversal. Add one result per game.
-5. **Console polish and testing.** Improve help, input errors, status output,
-   and leaderboard display. Run complete games and verify the edge cases.
-   Add focused tests during implementation as each rule or structure becomes
-   real, then run the full checks at this final stage.
+## Verification
 
-## Future implementation checklist
+```sh
+bash mvnw test
+```
 
-- [ ] Agree on playable rules, units, costs, limits, and the scoring formula.
-- [ ] Implement model validation and simple ordered paths.
-- [ ] Give enemies unique IDs across waves and results unique IDs across games.
-- [ ] Build a minimal console loop with commands to advance explicit ticks.
-- [ ] Implement the specified tick order and freeze paused or finished games.
-- [ ] Validate building, upgrading, and selling before changing resources.
-- [ ] Scan for the nearest living target and settle distance ties by enemy ID.
-- [ ] Handle missing projectile targets and prevent repeated hits.
-- [ ] Award defeat gold and subtract escape lives exactly once.
-- [ ] Implement hash collisions, insertion, lookup, removal, and resizing.
-- [ ] Verify the enemy list and hash table agree after spawns and removals.
-- [ ] Implement heap ordering and both upward and downward movement.
-- [ ] Verify equal spawn times preserve all events and all due events spawn.
-- [ ] Implement AVL insertion, heights, balance factors, and four rotations.
-- [ ] Verify equal scores preserve separate results and lookup uses the full key.
-- [ ] Display highest scores first; leave tree deletion for a later extension.
-- [ ] Submit exactly one result for victory or defeat.
-- [ ] Test boundaries, empty structures, invalid commands, pause, and completion.
-- [ ] Polish console help and run end-to-end Java simulation checks.
-
-Begin with the basic rules and the comments in `model/GamePath.java`,
-`model/Enemy.java`, and `model/GameState.java`. Then use `engine/GameEngine.java`
-as the guide for the first playable tick. No implementation, dependencies,
-build changes, or placeholder tests are part of this planning change.
+Tests cover array growth/shrink, hash collisions/removal/rehashing, randomized
+heap operations against a reference priority queue, all four AVL rotations,
+1,000 ordered AVL inserts with ties, path interpolation, target boundaries,
+one-time projectile damage, invalid spending, pause, simultaneous/overdue
+spawns, list/table consistency, victory/defeat, one-time submission, console
+input recovery, EOF, and replay with retained scores.

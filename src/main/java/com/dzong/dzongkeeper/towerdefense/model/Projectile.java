@@ -1,31 +1,24 @@
-/*
-Plan only. This file does not provide a working feature.
+package com.dzong.dzongkeeper.towerdefense.model;
 
-Responsibility
-Describe a shot travelling from a tower toward an enemy.
-
-Information to store later
-Its position, target enemy ID, speed, and damage.
-Speed uses distance per tick. The target ID refers to one unique enemy.
-
-Implementation steps
-1. Copy the tower's firing position and shot damage when fired.
-2. Remember the target ID rather than assuming the enemy still exists.
-3. Look up that target before moving or applying damage each tick.
-4. Move toward its current position without passing through it.
-5. Apply at most one hit, then remove the projectile.
-6. Discard the shot if its target died or escaped. Do not change targets.
-
-Works with
-Tower supplies the shot values. GameState holds active projectiles.
-EnemyHashTable resolves the target ID. GameEngine moves shots and applies hits.
-Enemy supplies the current target position through GamePath and progress.
-
-Example
-A shot aimed at enemy 12 travels 4 units per tick and deals 10 damage.
-If enemy 12 has already died, the shot disappears without awarding gold.
-
-Cases to test later
-Missing target, escaped target, several shots reaching one enemy,
-a target closer than one movement step, zero distance, and invalid speed.
-*/
+public final class Projectile {
+    private GamePath.Point position;
+    private final int targetId,damage;
+    private final double speed;
+    private boolean spent;
+    public Projectile(GamePath.Point position,int targetId,int damage,double speed) {
+        if (position==null || targetId<=0 || damage<=0 || speed<=0 || !Double.isFinite(speed))
+            throw new IllegalArgumentException("Invalid projectile");
+        this.position=position; this.targetId=targetId; this.damage=damage; this.speed=speed;
+    }
+    public int targetId() { return targetId; }
+    /** Returns true once the shot can be removed. */
+    public boolean advance(Enemy target) {
+        if (spent) return true;
+        if (target==null || target.getId()!=targetId || !target.isTargetable()) return spent=true;
+        GamePath.Point end=target.position(); double distance=GamePath.distance(position,end);
+        if (distance<=speed) { target.takeDamage(damage); return spent=true; }
+        position=new GamePath.Point(position.x()+(end.x()-position.x())*speed/distance,
+                position.y()+(end.y()-position.y())*speed/distance);
+        return false;
+    }
+}
