@@ -1,32 +1,28 @@
-/*
-Plan only. This file does not provide a working feature.
+package com.dzong.dzongkeeper.towerdefense.model;
 
-Responsibility
-Represent one enemy moving toward the Dzong.
-
-Information to store later
-A unique enemy ID, health, speed, path, progress, and gold reward.
-Progress means how far the enemy has travelled along its GamePath.
-Speed is distance per simulation tick. A tick is one game update.
-
-Implementation steps
-1. Choose units for health, distance, and speed. Reject invalid values.
-2. Assign a unique ID when the enemy is created. Never reuse an active ID.
-3. Keep its GamePath and progress together so its position can be found.
-4. Let the engine change health and progress during a tick.
-5. Distinguish a defeated enemy from one that escaped at the path end.
-   The engine will settle its reward or life loss exactly once.
-
-Works with
-GamePath supplies the route. WaveManager creates enemies.
-GameState lists them. EnemyHashTable finds them by ID.
-TargetSelector, Projectile, and GameEngine use their position and health.
-
-Example
-Enemy 12 has 30 health, moves 2 distance units per tick, and rewards 5 gold.
-After taking 30 damage, it is defeated and cannot escape or pay gold again.
-
-Cases to test later
-Duplicate IDs, invalid speed, zero health, damage beyond remaining health,
-movement across several path points, and arrival exactly at the Dzong.
-*/
+public final class Enemy {
+    private final int id, goldReward;
+    private final double speed;
+    private final GamePath path;
+    private int health;
+    private double progress;
+    public Enemy(int id, int health, double speed, int goldReward, GamePath path) {
+        if (id <= 0 || health <= 0 || speed <= 0 || !Double.isFinite(speed) || goldReward < 0 || path == null)
+            throw new IllegalArgumentException("Invalid enemy settings");
+        this.id=id; this.health=health; this.speed=speed; this.goldReward=goldReward; this.path=path;
+    }
+    public int getId() { return id; }
+    public int getHealth() { return health; }
+    public double getSpeed() { return speed; }
+    public double getProgress() { return progress; }
+    public int getGoldReward() { return goldReward; }
+    public GamePath.Point position() { return path.positionAt(progress); }
+    public boolean isAlive() { return health > 0; }
+    public boolean hasEscaped() { return isAlive() && path.hasReachedEnd(progress); }
+    public boolean isTargetable() { return isAlive() && !hasEscaped(); }
+    public void move() { if (isTargetable()) progress=Math.min(path.getLength(), progress+speed); }
+    public void takeDamage(int damage) {
+        if (damage < 0) throw new IllegalArgumentException("Damage cannot be negative");
+        if (isTargetable()) health=Math.max(0, health-damage);
+    }
+}

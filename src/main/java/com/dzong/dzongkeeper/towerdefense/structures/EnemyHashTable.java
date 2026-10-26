@@ -1,34 +1,46 @@
-/*
-Plan only. This file does not provide a working feature.
+package com.dzong.dzongkeeper.towerdefense.structures;
 
-Responsibility
-Find active enemies by their unique IDs without scanning the entire list.
-A hash table maps an ID to a bucket, which is a storage slot.
+import com.dzong.dzongkeeper.towerdefense.model.Enemy;
 
-Information to store or receive later
-Buckets containing enemy IDs and Enemy references, the entry count,
-and the bucket count. Receive IDs for insertion, lookup, and removal.
-
-Implementation steps
-1. Turn each ID into a valid bucket index using a hash calculation.
-2. Handle collisions: different IDs can lead to the same bucket.
-   A simple approach is a list of entries in each bucket.
-3. Insert a new ID and enemy. Reject duplicate active IDs.
-4. Look up the bucket and compare full IDs to find the right enemy.
-5. Remove only the matching entry. Leave colliding entries reachable.
-6. Track how full the table is and choose a resizing threshold.
-7. Resize by creating more buckets and recalculating every entry's index.
-
-Works with
-WaveManager creates Enemy objects. GameEngine registers and removes them.
-Projectile targets are resolved through this table.
-GameState keeps the active list used for movement and target scanning.
-
-Example
-Enemy IDs 12 and 22 land in one bucket. Both remain available.
-Removing 12 must still allow a lookup of 22.
-
-Cases to test later
-Collisions, duplicate insertion, missing lookup, missing removal,
-removing each position in a bucket list, resizing, and list/table agreement.
-*/
+/** Separate chaining with manually linked nodes; rehash above 75% load.
+ * Expected O(1) lookup, insert and removal; O(n) worst case. */
+public final class EnemyHashTable {
+    private static final class Node {
+        final Enemy enemy; Node next;
+        Node(Enemy enemy,Node next) { this.enemy=enemy; this.next=next; }
+    }
+    private Node[] buckets=new Node[4];
+    private int size;
+    public int size() { return size; }
+    private int index(int id) { return Math.floorMod(id ^ (id >>> 16),buckets.length); }
+    public Enemy get(int id) {
+        for (Node n=buckets[index(id)]; n!=null; n=n.next) if (n.enemy.getId()==id) return n.enemy;
+        return null;
+    }
+    public void put(Enemy enemy) {
+        if (enemy==null) throw new IllegalArgumentException("Missing enemy");
+        if (get(enemy.getId())!=null) throw new IllegalArgumentException("Duplicate enemy ID");
+        if (size+1>buckets.length*3/4) resize();
+        int i=index(enemy.getId()); buckets[i]=new Node(enemy,buckets[i]); size++;
+    }
+    public Enemy remove(int id) {
+        int i=index(id); Node previous=null;
+        for (Node n=buckets[i]; n!=null; n=n.next) {
+            if (n.enemy.getId()==id) {
+                if (previous==null) buckets[i]=n.next; else previous.next=n.next;
+                size--; return n.enemy;
+            }
+            previous=n;
+        }
+        return null;
+    }
+    private void resize() {
+        Node[] old=buckets; buckets=new Node[old.length*2];
+        for (Node head:old) {
+            while (head!=null) {
+                Node next=head.next; int i=index(head.enemy.getId());
+                head.next=buckets[i]; buckets[i]=head; head=next;
+            }
+        }
+    }
+}
