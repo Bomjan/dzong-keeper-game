@@ -1,41 +1,69 @@
-/*
-Plan only. This file does not provide a working feature.
+package com.dzong.dzongkeeper.towerdefense.structures;
 
-Responsibility
-Keep completed GameResult entries ordered by score and result ID.
-A binary search tree (BST) puts smaller keys left and larger keys right.
-An AVL tree keeps that tree balanced so one side does not grow too tall.
+import com.dzong.dzongkeeper.towerdefense.model.GameResult;
 
-Information to store or receive later
-A root and nodes holding a result, left and right children, and a height.
-Height measures the longest route down to a leaf.
-The key is the pair of score and unique result ID, in that order.
-
-Implementation steps
-1. Compare scores first and result IDs second. Equal scores must not lose results.
-2. Insert using ordinary BST insertion. Reject the same result ID being
-   submitted twice; GameEngine must also prevent repeated final submission.
-3. Recalculate heights after insertion, working back toward the root.
-4. Calculate each balance factor as left height minus right height.
-5. Fix a left-left case with a right rotation.
-6. Fix a right-right case with a left rotation.
-7. Fix a left-right case by rotating the left child left, then the parent right.
-8. Fix a right-left case by rotating the right child right, then the parent left.
-   A rotation rearranges nearby links while preserving the key order.
-9. Update heights after rotations and keep checking ancestors.
-10. Find a result by comparing its full key and following left or right links.
-11. Traverse right, then current result, then left to show highest scores first.
-12. Leave deletion as a future extension.
-
-Works with
-GameEngine submits one GameResult per completed game.
-ConsoleGame requests lookup and the highest-scoring results.
-
-Example
-Scores 10, 20, and 30 cause a right-right imbalance and a left rotation.
-Two results scoring 20 still occupy separate nodes when their IDs differ.
-
-Cases to test later
-All four rotation cases, height updates, empty lookup, missing keys,
-equal scores, repeated submission, and descending leaderboard order.
-*/
+/** AVL insertion and full-key lookup O(log n); top k traversal O(log n + k).
+ * Duplicate-ID validation scans O(n), since the tree is ordered by score then ID. */
+public final class ScoreAvlTree {
+    private static final class Node {
+        final GameResult result; Node left,right; int height=1;
+        Node(GameResult result) { this.result=result; }
+    }
+    private Node root;
+    private int size;
+    private long nextId=1;
+    public long nextResultId() { while (containsId(root,nextId)) nextId++; return nextId++; }
+    public int size() { return size; }
+    public int height() { return height(root); }
+    public void add(GameResult result) {
+        if (result==null || containsId(root,result.id())) throw new IllegalArgumentException("Missing result or duplicate result ID");
+        root=insert(root,result); size++;
+    }
+    private boolean containsId(Node n,long id) { return n!=null && (n.result.id()==id || containsId(n.left,id) || containsId(n.right,id)); }
+    public GameResult find(int score,long id) {
+        Node n=root;
+        while (n!=null) {
+            int c=Integer.compare(score,n.result.score());
+            if (c==0) c=Long.compare(id,n.result.id());
+            if (c==0) return n.result;
+            n=c<0 ? n.left : n.right;
+        }
+        return null;
+    }
+    public Array<GameResult> top(int limit) {
+        if (limit<0) throw new IllegalArgumentException("Limit cannot be negative");
+        Array<GameResult> results=new Array<>(); collect(root,limit,results); return results;
+    }
+    private void collect(Node n,int limit,Array<GameResult> out) {
+        if (n==null || out.size()>=limit) return;
+        collect(n.right,limit,out);
+        if (out.size()<limit) out.add(n.result);
+        if (out.size()<limit) collect(n.left,limit,out);
+    }
+    private Node insert(Node n,GameResult result) {
+        if (n==null) return new Node(result);
+        if (result.compareTo(n.result)<0) n.left=insert(n.left,result); else n.right=insert(n.right,result);
+        update(n);
+        if (height(n.left)-height(n.right)>1) {
+            if (result.compareTo(n.left.result)>0) n.left=rotateLeft(n.left);
+            return rotateRight(n);
+        }
+        if (height(n.right)-height(n.left)>1) {
+            if (result.compareTo(n.right.result)<0) n.right=rotateRight(n.right);
+            return rotateLeft(n);
+        }
+        return n;
+    }
+    private static int height(Node n) { return n==null ? 0 : n.height; }
+    private static void update(Node n) { n.height=1+Math.max(height(n.left),height(n.right)); }
+    private Node rotateRight(Node n) { Node p=n.left; n.left=p.right; p.right=n; update(n); update(p); return p; }
+    private Node rotateLeft(Node n) { Node p=n.right; n.right=p.left; p.left=n; update(n); update(p); return p; }
+    /** Recursively checks stored heights and AVL balance for review/testing. */
+    public boolean isBalanced() { return checkedHeight(root)>=0; }
+    private int checkedHeight(Node n) {
+        if (n==null) return 0;
+        int l=checkedHeight(n.left),r=checkedHeight(n.right);
+        if (l<0 || r<0 || Math.abs(l-r)>1 || n.height!=1+Math.max(l,r)) return -1;
+        return n.height;
+    }
+}
