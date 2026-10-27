@@ -1,20 +1,30 @@
 package com.dzong.dzongkeeper.towerdefense.engine;
 
-import com.dzong.dzongkeeper.towerdefense.model.*;
+import com.dzong.dzongkeeper.towerdefense.model.Enemy;
+import com.dzong.dzongkeeper.towerdefense.model.GamePath;
+import com.dzong.dzongkeeper.towerdefense.model.Tower;
 import com.dzong.dzongkeeper.towerdefense.structures.Array;
 
-/** Linear nearest-target search O(e), with smaller enemy ID breaking ties. */
+/** Chooses the nearest enemy in range; ties go to the smaller enemy ID. */
 public final class TargetSelector {
-    public Enemy select(Tower tower,Array<Enemy> enemies) {
-        Enemy best=null; double nearest=tower.range();
-        for (int i=0;i<enemies.size();i++) {
-            Enemy enemy=enemies.get(i);
-            if (!enemy.isTargetable()) continue;
-            double distance=GamePath.distance(tower.position(),enemy.position());
-            if (distance<nearest || (Double.compare(distance,nearest)==0 && (best==null || enemy.getId()<best.getId()))) {
-                best=enemy; nearest=distance;
+    public Enemy select(Tower tower, Array<Enemy> enemies) {
+        Enemy closest = null;
+        double closestDistance = tower.range();
+
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy enemy = enemies.get(i);
+            if (!enemy.isTargetable()) {
+                continue;
+            }
+
+            double distance = GamePath.distance(tower.position(), enemy.position());
+            if (distance < closestDistance
+                    || (Double.compare(distance, closestDistance) == 0
+                    && (closest == null || enemy.getId() < closest.getId()))) {
+                closest = enemy;
+                closestDistance = distance;
             }
         }
-        return best;
+        return closest;
     }
 }

@@ -34,11 +34,32 @@ public final class ConsoleGame {
             try {
                 switch (words[0].toLowerCase(java.util.Locale.ROOT)) {
                     case "quit", "exit" -> { arity(words,1); return; }
-                    case "help" -> { arity(words,1); out.println(HELP); }
-                    case "build" -> { arity(words,3); out.println("Built tower #"+game.build(Double.parseDouble(words[1]),Double.parseDouble(words[2]))); }
-                    case "upgrade" -> { arity(words,2); game.upgrade(Integer.parseInt(words[1])); out.println("Tower upgraded"); }
-                    case "sell" -> { arity(words,2); game.sell(Integer.parseInt(words[1])); out.println("Tower sold"); }
-                    case "wave" -> { arity(words,1); game.startWave(); status(out); }
+                    case "help" -> {
+                        arity(words,1);
+                        out.println(HELP);
+                    }
+                    case "build" -> {
+                        arity(words,3);
+                        out.println(
+                                "Built tower #"+game.build(
+                                        Double.parseDouble(words[1]),
+                                        Double.parseDouble(words[2]))
+                        );
+                    }
+                    case "upgrade" -> {
+                        arity(words,2);
+                        game.upgrade(Integer.parseInt(words[1]));
+                        out.println("Tower upgraded");
+                    }
+                    case "sell" -> {
+                        arity(words,2);
+                        game.sell(Integer.parseInt(words[1]));
+                        out.println("Tower sold");
+                    }
+                    case "wave" -> {
+                        arity(words,1);
+                        game.startWave(); status(out);
+                    }
                     case "tick" -> {
                         if (words.length>2) throw new IllegalArgumentException("Usage: tick [1..1000]");
                         int count=words.length==1 ? 1 : Integer.parseInt(words[1]);
@@ -46,15 +67,29 @@ public final class ConsoleGame {
                         for (int i=0;i<count;i++) game.tick();
                         status(out);
                     }
-                    case "pause", "resume" -> { arity(words,1); game.pause(words[0].equalsIgnoreCase("pause")); status(out); }
-                    case "status" -> { arity(words,1); status(out); }
-                    case "inspect" -> { arity(words,1); out.print(game.details()); }
+                    case "pause", "resume" -> {
+                        arity(words,1);
+                        game.pause(words[0].equalsIgnoreCase("pause"));
+                        status(out);
+                    }
+                    case "status" -> {
+                        arity(words,1);
+                        status(out);
+                    }
+                    case "inspect" -> {
+                        arity(words,1);
+                        out.print(game.details());
+                    }
                     case "scores" -> {
-                        arity(words,1); Array<GameResult> results=leaderboard.top(10);
+                        arity(words,1);
+                        Array<GameResult> results=leaderboard.top(10);
                         if (results.size()==0) out.println("No completed games yet");
                         for (int i=0;i<results.size();i++) out.println((i+1)+". "+results.get(i));
                     }
-                    case "new" -> { arity(words,1); game=new GameEngine(leaderboard); status(out); }
+                    case "new" -> {
+                        arity(words,1);
+                        game=new GameEngine(leaderboard); status(out);
+                    }
                     default -> out.println("Unknown command. Type help.");
                 }
             } catch (IllegalArgumentException error) { out.println("Error: "+error.getMessage()); }
@@ -67,7 +102,10 @@ public final class ConsoleGame {
         GameState s=game.state();
         out.printf("Tick %d | Gold %d | Lives %d | Wave %d/3 | Enemies %d | Pending %d | Towers %d | %s%n",
                 s.tick(),s.gold(),s.lives(),s.wave(),s.enemies(),s.pendingSpawns(),s.towers(),
-                s.finished() ? (s.result().victory() ? "VICTORY" : "DEFEAT") : s.paused() ? "PAUSED" : s.waveActive() ? "DEFENDING" : "BUILD / NEXT WAVE");
+                s.finished() ? (
+                        s.result().victory() ? "VICTORY" : "DEFEAT"
+                ) : s.paused() ? "PAUSED" :
+                        s.waveActive() ? "DEFENDING" : "BUILD / NEXT WAVE");
         if (s.finished()) out.println("Final score: "+s.result().score()+". Use scores or new.");
     }
 }
