@@ -41,6 +41,42 @@ body {
   -webkit-text-fill-color: currentColor;
 }
 
+#screen-main-menu {
+  align-items: flex-start;
+  padding-left: clamp(2rem, 6vw, 6rem);
+  background: linear-gradient(90deg, rgba(13, 17, 16, 0.94) 0%, rgba(13, 17, 16, 0.72) 38%, rgba(13, 17, 16, 0.12) 100%),
+    url('../assets/punakha-dzong.jpg') center / cover no-repeat;
+}
+
+#screen-main-menu > .text-center {
+  max-width: 690px;
+  text-align: left;
+}
+
+#screen-main-menu h1 {
+  font-size: clamp(3rem, 5.1vw, 5rem);
+  line-height: 1.08;
+  letter-spacing: 0.02em;
+}
+
+#screen-main-menu .max-w-md {
+  margin-left: 0;
+  background: #ae7947;
+}
+
+#screen-main-menu p { letter-spacing: 0.16em; }
+
+@media (max-width: 700px) {
+  #screen-main-menu {
+    align-items: center;
+    padding: 1.5rem;
+    background-image: linear-gradient(rgba(13, 17, 16, 0.48), rgba(13, 17, 16, 0.9)),
+      url('../assets/punakha-dzong.jpg');
+  }
+  #screen-main-menu > .text-center { text-align: center; }
+  #screen-main-menu .max-w-md { margin-left: auto; }
+}
+
 #screen-main-menu button,
 #screen-main-menu a,
 #screen-mode-select button,

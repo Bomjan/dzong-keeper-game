@@ -19,7 +19,7 @@ const materials = {
   road: new THREE.MeshStandardMaterial({ map: texture('stone'), color: 0x9d9280, roughness: 1, side: THREE.DoubleSide }),
   plaster: new THREE.MeshStandardMaterial({ map: texture('plaster'), color: 0xf2e8d2, roughness: 1 }),
   wood: new THREE.MeshStandardMaterial({ map: texture('wood'), color: 0x71472e, roughness: 0.88 }),
-  roof: new THREE.MeshStandardMaterial({ map: texture('roof', 2, 2), color: 0x765241, roughness: 0.95, side: THREE.DoubleSide }),
+  roof: new THREE.MeshStandardMaterial({ map: texture('roof', 2, 2), color: 0x57483c, roughness: 0.95, side: THREE.DoubleSide }),
   ochre: new THREE.MeshStandardMaterial({ color: 0x923f2e, roughness: 0.95 }),
   gold: new THREE.MeshStandardMaterial({ color: 0xb8995a, metalness: 0.3, roughness: 0.65 }),
   dark: new THREE.MeshStandardMaterial({ color: 0x221d19, roughness: 0.9 }),
@@ -145,21 +145,30 @@ function stoneRoad(path, width, height) {
 function treeAt(x, z, size) {
   const tree = new THREE.Group();
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.13 * size, 0.22 * size, 1.7 * size, 7),
+    new THREE.CylinderGeometry(0.07 * size, 0.19 * size, 4.1 * size, 9),
     materials.wood
   );
-  trunk.position.y = 0.85 * size;
+  trunk.position.y = 2.05 * size;
   trunk.castShadow = true;
   tree.add(trunk);
-  for (const [index, [leafX, leafY, leafZ, radius]] of [
-    [0, 2.15, 0, 0.9], [-0.55, 1.8, 0.1, 0.65], [0.55, 1.9, -0.15, 0.7],
-    [0.05, 2.75, 0.2, 0.6],
-  ].entries()) {
-    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(radius * size, 2),
-      index % 2 === 0 ? materials.leaves : materials.leavesLight);
-    crown.position.set(leafX * size, leafY * size, leafZ * size);
-    crown.castShadow = true;
-    tree.add(crown);
+  for (let layer = 0; layer < 6; layer++) {
+    const height = (0.95 + layer * 0.39) * size;
+    const reach = (1.55 - layer * 0.17) * size;
+    for (let branch = 0; branch < 5; branch++) {
+      const angle = branch * Math.PI * 2 / 5 + layer * 0.27;
+      const tip = new THREE.Vector3(Math.cos(angle) * reach, height - 0.27 * size,
+        Math.sin(angle) * reach);
+      const start = new THREE.Vector3(0, height + 0.17 * size, 0);
+      const direction = tip.clone().sub(start);
+      const needles = new THREE.Mesh(
+        new THREE.ConeGeometry(0.31 * size, direction.length(), 5),
+        (branch + layer) % 3 === 0 ? materials.leavesLight : materials.leaves
+      );
+      needles.position.copy(start).add(tip).multiplyScalar(0.5);
+      needles.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+      needles.castShadow = true;
+      tree.add(needles);
+    }
   }
   tree.position.set(x, 0, z);
   return tree;
@@ -194,21 +203,21 @@ function dzong() {
   building.add(lintel);
 
   for (const side of [-1, 1]) {
-    const frontGallery = box(7.6, 0.72, 0.46, materials.wood);
-    frontGallery.position.set(0, 2.72, side * 3.9);
+    const frontGallery = box(7.6, 1.02, 0.46, materials.plaster);
+    frontGallery.position.set(0, 2.9, side * 3.9);
     building.add(frontGallery);
-    const sideGallery = box(0.46, 0.72, 7.6, materials.wood);
-    sideGallery.position.set(side * 3.9, 2.72, 0);
+    const sideGallery = box(0.46, 1.02, 7.6, materials.plaster);
+    sideGallery.position.set(side * 3.9, 2.9, 0);
     building.add(sideGallery);
     for (const offset of [-2.7, -1.35, 0, 1.35, 2.7]) {
-      windowFrame(building, offset, 2.7, side * 4.16, side === 1 ? 0 : Math.PI);
-      windowFrame(building, side * 4.16, 2.7, offset,
+      windowFrame(building, offset, 2.95, side * 4.16, side === 1 ? 0 : Math.PI);
+      windowFrame(building, side * 4.16, 2.95, offset,
         side === 1 ? Math.PI / 2 : -Math.PI / 2);
     }
-    const frontEaves = roof(8.7, 1.8, 3.15, 0.48);
+    const frontEaves = roof(8.7, 1.8, 3.65, 0.48);
     frontEaves.position.z = side * 3.6;
     building.add(frontEaves);
-    const sideEaves = roof(8.7, 1.8, 3.15, 0.48);
+    const sideEaves = roof(8.7, 1.8, 3.65, 0.48);
     sideEaves.rotation.y = Math.PI / 2;
     sideEaves.position.x = side * 3.6;
     building.add(sideEaves);
@@ -271,11 +280,11 @@ export class DzongScene {
   constructor(canvas) {
     this.canvas = canvas;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x97a9a3);
-    this.scene.fog = new THREE.Fog(0x97a9a3, 55, 100);
+    this.scene.background = new THREE.Color(0x9eaaa3);
+    this.scene.fog = new THREE.Fog(0x9eaaa3, 65, 115);
     this.camera = new THREE.PerspectiveCamera(52, 1, 0.1, 180);
-    this.camera.position.set(0, 22, 32);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.position.set(0, 17, 35);
+    this.camera.lookAt(0, 1.5, 0);
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -311,8 +320,8 @@ export class DzongScene {
     this.height = height;
     this.camera.aspect = width / height;
     this.camera.fov = width < 700 ? 64 : 52;
-    this.camera.position.set(0, width < 700 ? 28 : 22, width < 700 ? 44 : 32);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.position.set(0, width < 700 ? 25 : 17, width < 700 ? 46 : 35);
+    this.camera.lookAt(0, 1.5, 0);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
     disposeMesh(this.staticGroup);
@@ -327,16 +336,19 @@ export class DzongScene {
 
     const fieldWidth = width / SCALE;
     const fieldDepth = height / SCALE;
-    const grove = [
-      [-0.42, -0.27, 1.18], [-0.31, -0.34, 0.72], [-0.22, -0.25, 0.95],
-      [0.27, -0.30, 0.82], [0.39, -0.25, 1.16],
-      [-0.38, 0.28, 0.88], [-0.25, 0.35, 1.11],
-      [0.22, 0.31, 0.76], [0.35, 0.25, 1.05], [0.45, 0.34, 0.9],
-    ];
+    const grove = [];
+    for (let index = 0; index < 36; index++) {
+      const x = ((index * 37) % 101) / 101 - 0.5;
+      const z = ((index * 61) % 97) / 97 - 0.5;
+      if (Math.abs(x) < 0.16 || Math.abs(z) < 0.12) continue;
+      grove.push([x, z, 0.48 + (index % 5) * 0.09]);
+    }
     for (const [x, z, size] of grove) {
       this.staticGroup.add(treeAt(x * fieldWidth, z * fieldDepth, size));
     }
-    this.staticGroup.add(dzong());
+    const centralDzong = dzong();
+    centralDzong.scale.setScalar(1.45);
+    this.staticGroup.add(centralDzong);
 
     for (const spot of spots) {
       const marker = new THREE.Mesh(
