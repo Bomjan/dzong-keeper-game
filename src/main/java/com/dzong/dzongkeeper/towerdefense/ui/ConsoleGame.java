@@ -12,13 +12,14 @@ public final class ConsoleGame {
     private GameEngine game=new GameEngine(leaderboard);
     private static final String HELP="""
             build <x> <y> | upgrade <id> | sell <id> | wave | tick [1..1000]
-            pause | resume | status | inspect | scores | new | help | quit
+            undo | redo | pause | resume | status | inspect | history | scores | new | help | quit
             Start with 120 gold and 5 lives. Tower: 40 gold; upgrade: 30; max level: 3.
             Sell for half the total investment. Three waves; each escape costs one life.
             Score = kills*10 + completed waves*100 + remaining lives*20.
             Route: (0,0) -> (12,0) -> (12,12). Build off-path in [0,20] x [0,20].
             Suggested start: build 5 3, build 10 5, build 15 9, wave, tick 60.
             Time advances only with tick during an active wave. Use wave for each next wave.
+            Undo/redo reverses tower edits until a wave starts or a tick advances.
             Leaderboard lasts until the console exits. new starts a fresh game.
             """;
     public static void main(String[] args) { new ConsoleGame().run(System.in,System.out); }
@@ -56,6 +57,18 @@ public final class ConsoleGame {
                         game.sell(Integer.parseInt(words[1]));
                         out.println("Tower sold");
                     }
+                    case "undo" -> {
+                        arity(words,1);
+                        game.undo();
+                        out.println("Tower edit undone");
+                        status(out);
+                    }
+                    case "redo" -> {
+                        arity(words,1);
+                        game.redo();
+                        out.println("Tower edit redone");
+                        status(out);
+                    }
                     case "wave" -> {
                         arity(words,1);
                         game.startWave(); status(out);
@@ -79,6 +92,16 @@ public final class ConsoleGame {
                     case "inspect" -> {
                         arity(words,1);
                         out.print(game.details());
+                    }
+                    case "history" -> {
+                        arity(words,1);
+                        Array<GameState> history = game.waveHistory();
+                        if (history.size() == 0) out.println("No completed waves yet");
+                        for (int i = 0; i < history.size(); i++) {
+                            GameState wave = history.get(i);
+                            out.printf("Wave %d | Tick %d | Gold %d | Lives %d | Kills %d%n",
+                                    wave.wave(), wave.tick(), wave.gold(), wave.lives(), wave.kills());
+                        }
                     }
                     case "scores" -> {
                         arity(words,1);

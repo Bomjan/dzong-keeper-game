@@ -22,6 +22,7 @@ class GameApiTests {
     @Test
     void servesViewAndRunsGameActions() throws Exception {
         assertTrue(send("GET", "/").body().contains("The Last Dzong Keeper"));
+        assertTrue(send("GET", "/investigation.html").body().contains("Plan a route"));
         assertTrue(send("GET", "/js/api.js").body().contains("/api/game"));
         send("POST", "/api/game/reset");
         assertEquals("r_utse", mapper.readTree(send("GET", "/api/game").body()).path("currentRoom").asText());
@@ -41,6 +42,45 @@ class GameApiTests {
         assertTrue(mapper.readTree(send("POST", "/api/game/accuse/s_03").body()).path("correct").asBoolean());
         assertEquals("WON", mapper.readTree(send("GET", "/api/game").body()).path("phase").asText());
         assertEquals(400, send("POST", "/api/game/inspect").statusCode());
+    }
+
+    @Test
+    void travelUsesCheapestUnlockedRouteWithoutChangingOneStepMovement() throws Exception {
+        send("POST", "/api/game/reset");
+        assertEquals(400, send("POST", "/api/game/move/r_admin").statusCode());
+        assertEquals(400, send("POST", "/api/game/travel/r_missing").statusCode());
+        assertEquals(400, send("POST", "/api/game/travel/r_utse").statusCode());
+        var preview = mapper.readTree(send("GET", "/api/game/route/r_admin").body());
+        assertTrue(preview.path("reachable").asBoolean());
+        assertEquals(6, preview.path("cost").asInt());
+        assertEquals("r_utse", preview.path("rooms").get(0).asText());
+        assertEquals("r_court_w", preview.path("rooms").get(1).asText());
+        assertEquals("r_admin", preview.path("rooms").get(2).asText());
+        var afterPreview = mapper.readTree(send("GET", "/api/game").body());
+        assertEquals(460, afterPreview.path("timeRemaining").asInt());
+        assertEquals("r_utse", afterPreview.path("currentRoom").asText());
+        assertEquals(400, send("GET", "/api/game/route/r_missing").statusCode());
+        var traveled = mapper.readTree(send("POST", "/api/game/travel/r_admin").body());
+        assertEquals("r_admin", traveled.path("currentRoom").asText());
+        assertEquals(454, traveled.path("timeRemaining").asInt());
+        assertTrue(traveled.path("rooms").get(1).path("visited").asBoolean());
+        assertTrue(traveled.path("rooms").get(7).path("visited").asBoolean());
+
+        send("POST", "/api/game/reset");
+        send("POST", "/api/game/edges/e_09/toggle");
+        var blocked = mapper.readTree(send("GET", "/api/game/route/r_watchtower").body());
+        assertFalse(blocked.path("reachable").asBoolean());
+        assertEquals(-1, blocked.path("cost").asInt());
+        assertEquals(400, send("POST", "/api/game/travel/r_watchtower").statusCode());
+        var state = mapper.readTree(send("GET", "/api/game").body());
+        assertEquals("r_utse", state.path("currentRoom").asText());
+        assertEquals(458, state.path("timeRemaining").asInt());
+        send("POST", "/api/game/edges/e_09/toggle");
+        assertTrue(mapper.readTree(send("GET", "/api/game/route/r_watchtower").body())
+                .path("reachable").asBoolean());
+        var reopened = mapper.readTree(send("POST", "/api/game/travel/r_watchtower").body());
+        assertEquals("r_watchtower", reopened.path("currentRoom").asText());
+        assertEquals(451, reopened.path("timeRemaining").asInt());
     }
 
     private HttpResponse<String> send(String method, String path) throws Exception {

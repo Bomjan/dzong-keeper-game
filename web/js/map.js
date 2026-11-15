@@ -293,9 +293,21 @@ export function renderMap(container, state, viewState, callbacks) {
   // update flags so the listeners see the new values
   view.flags.lockModeActive = !!(viewState && viewState.lockModeActive);
   view.flags.interviewModeActive = !!(viewState && viewState.interviewModeActive);
+  view.flags.routeSelectionActive = !!(viewState && viewState.routeSelectionActive);
   view.flags.adjacent = new Set(state.adjacent || []);
   view.flags.currentRoom = state.currentRoom;
   view.flags.interviewed = new Set((state.witnesses || []).filter((w) => w.interviewed).map((w) => w.id));
+  const routeRooms = (viewState && viewState.routeRooms) || [];
+  const routeRoomSet = new Set(routeRooms);
+  const routeEdges = new Set();
+  for (let i = 1; i < routeRooms.length; i++) {
+    const first = routeRooms[i - 1];
+    const second = routeRooms[i];
+    const edge = state.edges.find((candidate) => !candidate.locked &&
+      ((candidate.from === first && candidate.to === second) ||
+       (candidate.from === second && candidate.to === first)));
+    if (edge) routeEdges.add(edge.id);
+  }
 
   const ratio = state.timeTotal > 0 ? state.timeRemaining / state.timeTotal : 1;
   view.sky.style.fill = skyColor(ratio);
@@ -305,6 +317,7 @@ export function renderMap(container, state, viewState, callbacks) {
     if (!el) continue;
     el.g.classList.toggle('locked', !!edge.locked);
     el.g.classList.toggle('lockable', view.flags.lockModeActive);
+    el.g.classList.toggle('route-active', routeEdges.has(edge.id));
   }
 
   for (const room of state.rooms) {
@@ -316,6 +329,8 @@ export function renderMap(container, state, viewState, callbacks) {
     el.g.classList.toggle('unvisited', !room.visited);
     el.g.classList.toggle('current', isCurrent);
     el.g.classList.toggle('adjacent', isAdjacent);
+    el.g.classList.toggle('route-room', routeRoomSet.has(room.id));
+    el.g.classList.toggle('destination', room.id === (viewState && viewState.destinationId));
 
     const prevCount = view.anomalyCounts.get(room.id) || 0;
     if (room.anomalyCount > 0) {
@@ -354,7 +369,7 @@ function buildStatic(container, state, callbacks) {
     preserveAspectRatio: 'xMidYMid meet',
   });
 
-  const flags = { lockModeActive: false, interviewModeActive: false, adjacent: new Set(), currentRoom: null, interviewed: new Set() };
+  const flags = { lockModeActive: false, interviewModeActive: false, routeSelectionActive: false, adjacent: new Set(), currentRoom: null, interviewed: new Set() };
 
   const { sky } = buildBackground(svg, bounds);
 
@@ -415,7 +430,7 @@ function buildStatic(container, state, callbacks) {
       x: -fp.hitR, y: fp.roofPeak - 6, width: fp.hitR * 2, height: -fp.roofPeak + fp.base + 12,
     });
     hit.addEventListener('click', () => {
-      if (!flags.adjacent.has(room.id)) return;
+      if (!flags.routeSelectionActive && !flags.adjacent.has(room.id)) return;
       onRoomClick(room.id);
     });
     g.appendChild(hit);

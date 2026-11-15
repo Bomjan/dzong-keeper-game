@@ -69,6 +69,16 @@ export async function move(roomId) {
   return state;
 }
 
+export async function previewRoute(roomId) {
+  if (isPreview) throw new Error('Route planning requires the Spring Boot server.');
+  return request(`/route/${encodeURIComponent(roomId)}`);
+}
+
+export async function travel(roomId) {
+  if (isPreview) throw new Error('Travel requires the Spring Boot server.');
+  return request(`/travel/${encodeURIComponent(roomId)}`, 'POST');
+}
+
 // These actions are available when Spring serves the page. GitHub Pages is a static preview.
 export async function inspect() {
   if (!isPreview) return request('/inspect', 'POST');

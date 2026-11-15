@@ -56,4 +56,12 @@ public final class Tower {
         }
         level++;
     }
+
+    /** Reverses one upgrade before the simulation advances. */
+    public void downgrade() {
+        if (level == 1) {
+            throw new IllegalArgumentException("Tower already at minimum level");
+        }
+        level--;
+    }
 }

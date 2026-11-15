@@ -27,14 +27,24 @@ class ConsoleGameTests {
     }
 
     @Test
+    void consoleUndoRedoChangesTowerRosterAndGold() {
+        String output = run("build 5 3\nundo\nstatus\nredo\ninspect\nwave\nundo\nquit\n");
+        assertTrue(output.contains("Tower edit undone"));
+        assertTrue(output.contains("Tower edit redone"));
+        assertTrue(output.contains("Tower #1"));
+        assertTrue(output.contains("Error: Tower edits are available between waves only"));
+    }
+
+    @Test
     void consoleCanCompleteGameAndRestartWithLeaderboard() {
         String output = run(
                 "build 5 3\nbuild 10 5\nbuild 15 9\n"
                 + "wave\ntick 100\nwave\ntick 100\nwave\ntick 100\n"
-                + "scores\nnew\nscores\nquit\n"
+                + "history\nscores\nnew\nscores\nquit\n"
         );
         assertTrue(output.contains("VICTORY"));
         assertTrue(output.contains("GameResult[id=1"));
+        assertTrue(output.contains("Wave 3 | Tick"));
         assertTrue(output.contains("Gold 120"));
         assertFalse(output.contains("Error:"));
     }

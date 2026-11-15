@@ -3,6 +3,11 @@
 The Java tower-defense implementation is runnable under
 `src/main/java/com/dzong/dzongkeeper/towerdefense/`. It has no Spring dependencies.
 The investigation API and browser game are separate from this console demo.
+The browser tower-defense game in `web/js/main.js` also has undo/redo buttons
+and spatial targeting. It uses a simple array as each history stack and a
+`Map` of 100-pixel cells. The grid is rebuilt each frame after enemies move,
+so defeated and escaped enemies cannot remain in it. The console implementation
+uses its own Java stack and grid.
 
 ## Run the console
 
@@ -36,6 +41,7 @@ build 15 9
 wave
 tick
 inspect
+history
 pause
 tick 10
 status
@@ -66,6 +72,10 @@ Use `help` for all commands. End-of-input also exits cleanly.
 | `EnemyHashTable` | Enemy ID lookup for projectile targets | Expected O(1), worst O(n); rehash O(n) |
 | `SpawnMinHeap` | Earliest scheduled spawn first | Add/remove O(log n), peek O(1) |
 | `ScoreAvlTree` | Balanced score leaderboard with full-key lookup | Tree insert/lookup O(log n), top k O(log n + k) |
+| `CircularQueue<T>` | FIFO projectile processing | Enqueue/dequeue amortized O(1), peek O(1) |
+| `Stack<T>` | Completed wave snapshots and tower edit undo/redo | Push/peek/pop/size/isEmpty/clear O(1), snapshot O(n) |
+| `WeightedRoomGraph` | Investigation rooms and least-cost unlocked route | Search O((V+E) log V), storage O(V+E) |
+| `SpatialHashGrid` | Nearby enemies for tower targeting | Insert expected O(1), query O(c+k), storage O(e+c) |
 
 The hash table handles collisions with manually linked nodes, grows above 75%
 load, and rehashes entries. The heap sifts up after insertion and sifts down
@@ -73,7 +83,15 @@ after root removal. Its key is `(dueTick, sequence)` so equal times retain
 all events. The AVL tree implements LL, RR, LR, and RL rotations and updates
 heights after rotations. Its key is `(score, resultId)` so equal scores survive.
 Duplicate result-ID validation is a separate O(n) traversal, making the overall
-public AVL `add` operation O(n). AVL deletion is outside this demo.
+public AVL `add` operation O(n). AVL deletion is outside this demo. The circular
+queue grows and shrinks by copying live entries in FIFO order, including after
+wraparound. The stack keeps immutable game snapshots for completed waves and
+reversible tower edits in two LIFO histories. A successful build, upgrade, or
+sale pushes an edit onto undo and clears redo. `undo` reverses the edit and
+pushes it onto redo; `redo` reapplies it. Invalid edits leave both histories
+unchanged. History clears when a wave starts or a tick advances, because
+combat can alter tower cooldowns, gold, lives, and enemy state. Paused ticks
+leave history intact.
 
 No `ArrayList`, `HashMap`, `PriorityQueue`, `TreeMap`, library sorting, or collection
 implementation is used in production tower-defense code. Primitive/object Java
@@ -83,11 +101,11 @@ only in tests to compare results independently.
 
 ## Algorithms and game rules
 
-- The path is a polyline: (0,0) to (12,0) to the Dzong at (12,12).
-  Position interpolation scans segments in O(p), where p is the number of points.
-  No graph search is needed for this fixed route.
-- Target selection scans active enemies for the nearest eligible target in
-  O(e) per ready tower. Distance ties choose the smaller enemy ID.
+- The fixed route follows (0,0), (12,0), and the Dzong at (12,12).
+  Position interpolation scans its segments in O(p), where p is the number
+  of points.
+- Target selection searches grid cells overlapping the tower's range, then
+  checks actual distances. Distance ties choose the smaller enemy ID.
 - Start with 120 gold and 5 lives. A tower costs 40; upgrades cost 30, up to
   level 3. Sale refunds half the total investment. Towers must be off the path,
   within coordinates [0,20], and at least one unit apart.
@@ -99,14 +117,18 @@ only in tests to compare results independently.
   remove defeated/escaped enemies from both structures, settle rewards/lives,
   then check completion. An escaped enemy cannot subsequently be hit.
 - Paused games, finished games, and intervals between waves freeze simulation
-  time. Building and upgrading during a pause are allowed.
+  time. Building and upgrading during a pause are allowed; undo and redo are
+  available only between waves.
 - An escape costs one life. Zero lives is defeat. Clearing all three waves with
   at least one life is victory. Completed games are frozen and submitted once.
 - Score is `kills*10 + completedWaves*100 + remainingLives*20` for both outcomes.
   Results are immutable. New games reset resources and preserve the shared AVL
   leaderboard. Scores are in memory and disappear when the console exits.
 
-The engine uses reverse-index cleanup so array deletion cannot skip entries.
+The engine uses reverse-index enemy cleanup so array deletion cannot skip entries.
+Projectiles are processed once per tick in FIFO order; unfinished shots return
+to the back of the queue. Wave snapshots are pushed once upon completion and
+shown by `history` in reverse completion order.
 Indexed array removals may shift O(e) elements each, making a tick O(e²) in the
 worst case, in addition to targeting and projectile work. This is adequate for
 these small waves and is an explicit tradeoff of the custom ordered array.
@@ -123,3 +145,63 @@ heap operations against a reference priority queue, all four AVL rotations,
 one-time projectile damage, invalid spending, pause, simultaneous/overdue
 spawns, list/table consistency, victory/defeat, one-time submission, console
 input recovery, EOF, and replay with retained scores.
+
+## Seven data structures in the game
+
+Here `n` is the number of stored items, `V` rooms, `E` corridors, `e` enemies,
+`c` cells searched, and `k` enemies in those cells. The circular queue is an
+additional supporting structure.
+
+| Structure | What it is and why it is used | Practical example | Time; space |
+| --- | --- | --- | --- |
+| Dynamic Array | A resizable sequence holds active towers and enemies. It doubles when full. | Add tower #3 to the end. | Index O(1), append amortized O(1), middle delete O(n); O(n) |
+| Hash Table | Buckets keyed by enemy ID let projectiles find a target quickly. Collisions use linked entries. | Look up enemy #7 when a shot arrives. | Expected lookup O(1), worst O(n); O(n) |
+| Min-Heap | A binary tree stored in an array keeps the earliest spawn at its root. | Spawn the event due on tick 4 before tick 7. | Insert/remove O(log n), peek O(1); O(n) |
+| AVL Tree | A balanced search tree keeps leaderboard scores ordered using rotations. | Insert a new score of 580 and show the top scores. | Tree search O(log n), current insertion O(n) because of duplicate-ID checking; O(n) |
+| Weighted Graph | Each room has a list of corridors with costs. It represents the investigation map. | A two-corridor route costing 5 beats a direct corridor costing 10. | Dijkstra O((V+E) log V); O(V+E) |
+| Stack | A last-in, first-out linked list holds tower edits for undo and redo. | Undo a sale, then redo it. | Push/pop/peek O(1); O(n) |
+| Spatial Hash Grid | A hash table of square cells groups enemies by position. Towers inspect nearby cells. | A tower near x=4 skips enemies near x=90. | Expected insert O(1), query O(c+k), cell removal O(k); O(e+c) |
+
+Dijkstra starts with cost zero at the current room and infinity elsewhere. A
+binary min-heap repeatedly supplies the room with the lowest known cost. For
+each unlocked neighboring corridor, the algorithm replaces a cost if the new
+route is cheaper and records the previous room. Following those previous-room
+links backward gives the complete route. The graph is rebuilt from the current
+session state for each preview, so corridor lock changes appear immediately.
+Open `/investigation.html`, select a room on the map, and inspect the route and
+cost. The preview does not spend time. Choose travel to follow that route.
+
+The grid uses cells four coordinate units wide. This is smaller than a tower's
+8-10 unit range, so many distant enemies can be skipped without making the
+cells extremely small. Each enemy moves between cells as its position changes
+and is removed after defeat or escape. A query scans cells in the square around
+the tower, then the selector measures real distance and uses the smaller enemy
+ID for ties. `undo` and `redo` can be demonstrated with `build 5 3`, `undo`,
+`redo`, `inspect`. They are restricted to preparation and intermission.
+
+## Targeting comparison
+
+Run after `mvnw test` on Windows:
+
+```powershell
+java -cp 'target/test-classes;target/classes' com.dzong.dzongkeeper.towerdefense.engine.TargetingBenchmark
+```
+
+This program warms up both selectors, repeats each measurement 2,000 times,
+counts distance calculations per one pass, and checks that selected targets
+match. One local JDK 27 run gave these elapsed times for 2,000 passes (ns):
+
+| Enemies | Towers | Linear | Grid | Distance calculations, linear/grid |
+| ---: | ---: | ---: | ---: | ---: |
+| 10 | 1 | 806,900 | 1,781,900 | 10 / 10 |
+| 10 | 10 | 2,160,400 | 3,007,300 | 100 / 10 |
+| 100 | 1 | 2,126,100 | 573,300 | 100 / 11 |
+| 100 | 10 | 19,889,700 | 2,417,100 | 1,000 / 31 |
+| 1,000 | 1 | 19,329,500 | 978,900 | 1,000 / 22 |
+| 1,000 | 10 | 203,807,900 | 9,600,300 | 10,000 / 222 |
+
+All targets matched. With few enemies, cell lookup and candidate-array creation
+cost more than a simple scan. With many enemies spread along the path, the grid
+avoids most distance calculations and becomes faster. Times vary between JVM
+runs and machines. These numbers exclude grid construction and movement upkeep;
+the distance counts describe one targeting pass only.

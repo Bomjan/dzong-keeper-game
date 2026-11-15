@@ -7,8 +7,11 @@ import com.dzong.dzongkeeper.towerdefense.model.GameState;
 import com.dzong.dzongkeeper.towerdefense.model.Projectile;
 import com.dzong.dzongkeeper.towerdefense.model.Tower;
 import com.dzong.dzongkeeper.towerdefense.structures.Array;
+import com.dzong.dzongkeeper.towerdefense.structures.CircularQueue;
 import com.dzong.dzongkeeper.towerdefense.structures.EnemyHashTable;
+import com.dzong.dzongkeeper.towerdefense.structures.Stack;
 import com.dzong.dzongkeeper.towerdefense.structures.ScoreAvlTree;
+import com.dzong.dzongkeeper.towerdefense.structures.SpatialHashGrid;
 
 /** Deterministic simulation: the game advances only when tick() is called. */
 public final class GameEngine {
@@ -19,10 +22,14 @@ public final class GameEngine {
     );
     private final Array<Enemy> enemies = new Array<>();
     private final Array<Tower> towers = new Array<>();
-    private final Array<Projectile> projectiles = new Array<>();
+    private final CircularQueue<Projectile> projectiles = new CircularQueue<>();
+    private final Stack<GameState> waveHistory = new Stack<>();
+    private final Stack<TowerEdit> undoStack = new Stack<>();
+    private final Stack<TowerEdit> redoStack = new Stack<>();
     private final EnemyHashTable index = new EnemyHashTable();
     private final WaveManager waves = new WaveManager();
     private final TargetSelector selector = new TargetSelector();
+    private final SpatialHashGrid grid = new SpatialHashGrid(4);
     private final ScoreAvlTree leaderboard;
 
     private long tick;
@@ -36,6 +43,9 @@ public final class GameEngine {
     private boolean finished;
     private boolean waveActive;
     private GameResult result;
+
+    private enum EditType { BUILD, UPGRADE, SELL }
+    private record TowerEdit(EditType type, Tower tower, int index, int amount) { }
 
     public GameEngine() {
         this(new ScoreAvlTree());
@@ -54,6 +64,11 @@ public final class GameEngine {
                 enemies.size(), towers.size(), projectiles.size(), waves.pending(),
                 waveActive, paused, finished, result
         );
+    }
+
+    /** Completed wave snapshots, newest first. */
+    public Array<GameState> waveHistory() {
+        return waveHistory.snapshot();
     }
 
     public int build(double x, double y) {
@@ -76,6 +91,7 @@ public final class GameEngine {
         Tower tower = new Tower(nextTowerId++, x, y);
         towers.add(tower);
         gold -= Tower.COST;
+        record(new TowerEdit(EditType.BUILD, tower, towers.size() - 1, Tower.COST));
         return tower.getId();
     }
 
@@ -88,6 +104,7 @@ public final class GameEngine {
         requireGold(Tower.UPGRADE_COST);
         tower.upgrade();
         gold -= Tower.UPGRADE_COST;
+        record(new TowerEdit(EditType.UPGRADE, tower, -1, Tower.UPGRADE_COST));
     }
 
     public void sell(int id) {
@@ -95,8 +112,10 @@ public final class GameEngine {
         Tower tower = tower(id);
         for (int i = 0; i < towers.size(); i++) {
             if (towers.get(i) == tower) {
-                gold += tower.refund();
+                int refund = tower.refund();
+                gold += refund;
                 towers.delete(i);
+                record(new TowerEdit(EditType.SELL, tower, i, refund));
                 return;
             }
         }
@@ -124,6 +143,74 @@ public final class GameEngine {
         }
     }
 
+    private void ensurePreparation() {
+        if (waveActive) {
+            throw new IllegalArgumentException("Tower edits are available between waves only");
+        }
+    }
+
+    private void record(TowerEdit edit) {
+        undoStack.push(edit);
+        redoStack.clear();
+    }
+
+    private void clearEdits() {
+        undoStack.clear();
+        redoStack.clear();
+    }
+
+    public boolean canUndo() { return !waveActive && !undoStack.isEmpty(); }
+
+    public boolean canRedo() { return !waveActive && !redoStack.isEmpty(); }
+
+    /** Reverses the most recent tower edit while simulation state is unchanged. */
+    public void undo() {
+        ensurePlaying();
+        ensurePreparation();
+        TowerEdit edit = undoStack.pop();
+        if (edit == null) throw new IllegalArgumentException("Nothing to undo");
+        switch (edit.type()) {
+            case BUILD -> {
+                towers.delete(edit.index());
+                gold += edit.amount();
+                nextTowerId--;
+            }
+            case UPGRADE -> {
+                edit.tower().downgrade();
+                gold += edit.amount();
+            }
+            case SELL -> {
+                towers.add(edit.index(), edit.tower());
+                gold -= edit.amount();
+            }
+        }
+        redoStack.push(edit);
+    }
+
+    /** Reapplies the most recently undone tower edit. */
+    public void redo() {
+        ensurePlaying();
+        ensurePreparation();
+        TowerEdit edit = redoStack.pop();
+        if (edit == null) throw new IllegalArgumentException("Nothing to redo");
+        switch (edit.type()) {
+            case BUILD -> {
+                towers.add(edit.index(), edit.tower());
+                gold -= edit.amount();
+                nextTowerId++;
+            }
+            case UPGRADE -> {
+                edit.tower().upgrade();
+                gold -= edit.amount();
+            }
+            case SELL -> {
+                towers.delete(edit.index());
+                gold += edit.amount();
+            }
+        }
+        undoStack.push(edit);
+    }
+
     public void pause(boolean value) {
         ensurePlaying();
         paused = value;
@@ -134,6 +221,7 @@ public final class GameEngine {
         if (paused || waveActive) {
             throw new IllegalArgumentException("Resume or finish the current wave first");
         }
+        clearEdits();
         waves.schedule(wave + 1, tick, path);
         wave++;
         waveActive = true;
@@ -144,6 +232,7 @@ public final class GameEngine {
             return;
         }
 
+        clearEdits();
         tick++;
         spawnDueEnemies();
         moveEnemies();
@@ -163,12 +252,17 @@ public final class GameEngine {
         while ((spawned = waves.spawnDue(tick)) != null) {
             index.put(spawned);
             enemies.add(spawned);
+            grid.add(spawned);
         }
     }
 
     private void moveEnemies() {
         for (int i = 0; i < enemies.size(); i++) {
-            enemies.get(i).move();
+            Enemy enemy = enemies.get(i);
+            int oldX = grid.cellX(enemy.position().x());
+            int oldY = grid.cellY(enemy.position().y());
+            enemy.move();
+            grid.update(enemy, oldX, oldY);
         }
     }
 
@@ -178,7 +272,7 @@ public final class GameEngine {
             if (!tower.ready(tick)) {
                 continue;
             }
-            Enemy target = selector.select(tower, enemies);
+            Enemy target = selector.select(tower, grid);
             if (target != null) {
                 projectiles.add(new Projectile(tower.position(), target.getId(), tower.damage(), 4));
                 tower.fired(tick);
@@ -187,10 +281,11 @@ public final class GameEngine {
     }
 
     private void advanceProjectiles() {
-        for (int i = projectiles.size() - 1; i >= 0; i--) {
-            Projectile shot = projectiles.get(i);
-            if (shot.advance(index.get(shot.targetId()))) {
-                projectiles.delete(i);
+        int activeAtStart = projectiles.size();
+        for (int i = 0; i < activeAtStart; i++) {
+            Projectile shot = projectiles.poll();
+            if (!shot.advance(index.get(shot.targetId()))) {
+                projectiles.add(shot);
             }
         }
     }
@@ -209,6 +304,7 @@ public final class GameEngine {
                 lives = Math.max(0, lives - 1);
             }
             index.remove(enemy.getId());
+            grid.remove(enemy);
             enemies.delete(i);
         }
     }
@@ -217,8 +313,9 @@ public final class GameEngine {
         wavesCompleted++;
         waveActive = false;
         while (projectiles.size() > 0) {
-            projectiles.delete();
+            projectiles.poll();
         }
+        waveHistory.push(state());
         if (wave == WaveManager.TOTAL_WAVES) {
             finish(true);
         }

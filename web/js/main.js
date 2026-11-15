@@ -59,6 +59,65 @@ let towers = [];
 let enemies = [];
 let projectiles = [];
 let warriorUnits = [];
+let undoStack = [];
+let redoStack = [];
+let nextTowerId = 1;
+
+// A cell is near the attack range of one tower, limiting distance checks.
+class SpatialHashGrid {
+  constructor(cellSize) {
+    this.cellSize = cellSize;
+    this.cells = new Map();
+  }
+
+  cellKey(x, y) {
+    return `${Math.floor(x / this.cellSize)},${Math.floor(y / this.cellSize)}`;
+  }
+
+  add(enemy) {
+    const key = this.cellKey(enemy.x, enemy.y);
+    if (!this.cells.has(key)) this.cells.set(key, []);
+    this.cells.get(key).push(enemy);
+  }
+
+  nearby(x, y, range) {
+    const candidates = [];
+    for (let cellX = Math.floor((x - range) / this.cellSize); cellX <= Math.floor((x + range) / this.cellSize); cellX++) {
+      for (let cellY = Math.floor((y - range) / this.cellSize); cellY <= Math.floor((y + range) / this.cellSize); cellY++) {
+        const cell = this.cells.get(`${cellX},${cellY}`);
+        if (cell) candidates.push(...cell);
+      }
+    }
+    return candidates;
+  }
+}
+
+function selectNearestEnemy(tower, candidates) {
+  let target = null;
+  let nearestDistance = tower.range;
+  for (const enemy of candidates) {
+    const distance = Math.hypot(enemy.x - tower.x, enemy.y - tower.y);
+    if (distance < nearestDistance ||
+        (distance === nearestDistance && target && enemy.id < target.id)) {
+      nearestDistance = distance;
+      target = enemy;
+    }
+  }
+  return target;
+}
+
+function updateHistoryButtons() {
+  document.getElementById('btn-undo').disabled = gameState.inWave || undoStack.length === 0;
+  document.getElementById('btn-redo').disabled = gameState.inWave || redoStack.length === 0;
+}
+
+function recordTowerEdit(edit) {
+  if (!gameState.inWave) {
+    undoStack.push(edit);
+    redoStack = [];
+    updateHistoryButtons();
+  }
+}
 
 // Path setup: 4 paths coming from Top, Bottom, Left, Right into central Dzong (CenterX, CenterY)
 let dzongCenter = { x: 0, y: 0 };
@@ -177,6 +236,7 @@ function resizeCanvas() {
   paths.forEach(prepareCurvedPath);
 
   // Setup 12 Build spots (3 on each of the 4 paths), kept 20px away from the main gate
+  const oldSpots = buildSpots;
   buildSpots = [];
   const offset = 55;
   const gateOffset = 20;
@@ -200,6 +260,14 @@ function resizeCanvas() {
   buildSpots.push({ id: 10, x: dzongCenter.x + (canvas.width - dzongCenter.x) * 0.3 + gateOffset, y: dzongCenter.y + offset, tower: null });
   buildSpots.push({ id: 11, x: dzongCenter.x + (canvas.width - dzongCenter.x) * 0.5 + gateOffset, y: dzongCenter.y - offset, tower: null });
   buildSpots.push({ id: 12, x: dzongCenter.x + (canvas.width - dzongCenter.x) * 0.7 + gateOffset, y: dzongCenter.y + offset, tower: null });
+  for (const spot of buildSpots) {
+    const previous = oldSpots.find((old) => old.id === spot.id);
+    if (!previous?.tower) continue;
+    spot.tower = previous.tower;
+    spot.tower.spot = spot;
+    spot.tower.x = spot.x;
+    spot.tower.y = spot.y;
+  }
 }
 
 // Give each straight path a gentle S-curve and sample it for enemy movement.
@@ -321,9 +389,13 @@ function resetGame() {
   enemies = [];
   projectiles = [];
   warriorUnits = [];
+  undoStack = [];
+  redoStack = [];
+  nextTowerId = 1;
   pickNextWavePaths();
 
   updateUI();
+  updateHistoryButtons();
   closeBuildDrawer();
   closeUpgradeDrawer();
 }
@@ -426,7 +498,7 @@ function buildTower(type) {
   updateUI();
 
   const newTower = {
-    id: Date.now(),
+    id: nextTowerId++,
     type: type,
     x: gameState.selectedBuildSpot.x,
     y: gameState.selectedBuildSpot.y,
@@ -445,6 +517,8 @@ function buildTower(type) {
   if (type === 'guard') {
     spawnWarriorUnit(newTower);
   }
+
+  recordTowerEdit({ type: 'build', tower: newTower, index: towers.length - 1, amount: config.cost });
 
   closeBuildDrawer();
 }
@@ -475,9 +549,11 @@ function upgradeSelectedTower() {
   }
 
   gameState.gold -= upgradeCost;
+  const previous = { level: tower.level, damage: tower.damage, range: tower.range };
   tower.level += 1;
   tower.damage = Math.floor(tower.damage * 1.2);
   tower.range += 5;
+  recordTowerEdit({ type: 'upgrade', tower, amount: upgradeCost, previous });
   updateUI();
 
   openUpgradeDrawer(tower);
@@ -487,6 +563,8 @@ function sellSelectedTower() {
   if (!gameState.selectedTower) return;
   const tower = gameState.selectedTower;
   const sellVal = Math.floor(TOWER_TYPES[tower.type].cost * 0.5 * tower.level);
+  const index = towers.indexOf(tower);
+  const warriors = warriorUnits.filter((unit) => unit.towerId === tower.id);
 
   gameState.gold += sellVal;
   updateUI();
@@ -495,8 +573,63 @@ function sellSelectedTower() {
   tower.spot.tower = null;
   towers = towers.filter((t) => t.id !== tower.id);
   warriorUnits = warriorUnits.filter((w) => w.towerId !== tower.id);
+  recordTowerEdit({ type: 'sell', tower, index, amount: sellVal, warriors });
 
   closeUpgradeDrawer();
+}
+
+function undoTowerEdit() {
+  if (gameState.inWave || undoStack.length === 0) return;
+  const edit = undoStack.pop();
+  if (edit.type === 'build') {
+    towers.splice(towers.indexOf(edit.tower), 1);
+    edit.tower.spot.tower = null;
+    warriorUnits = warriorUnits.filter((unit) => unit.towerId !== edit.tower.id);
+    gameState.gold += edit.amount;
+    nextTowerId--;
+  } else if (edit.type === 'upgrade') {
+    edit.tower.level = edit.previous.level;
+    edit.tower.damage = edit.previous.damage;
+    edit.tower.range = edit.previous.range;
+    gameState.gold += edit.amount;
+  } else {
+    towers.splice(edit.index, 0, edit.tower);
+    edit.tower.spot.tower = edit.tower;
+    warriorUnits.push(...edit.warriors);
+    gameState.gold -= edit.amount;
+  }
+  redoStack.push(edit);
+  closeBuildDrawer();
+  closeUpgradeDrawer();
+  updateUI();
+  updateHistoryButtons();
+}
+
+function redoTowerEdit() {
+  if (gameState.inWave || redoStack.length === 0) return;
+  const edit = redoStack.pop();
+  if (edit.type === 'build') {
+    towers.splice(edit.index, 0, edit.tower);
+    edit.tower.spot.tower = edit.tower;
+    if (edit.tower.type === 'guard') spawnWarriorUnit(edit.tower);
+    gameState.gold -= edit.amount;
+    nextTowerId++;
+  } else if (edit.type === 'upgrade') {
+    edit.tower.level++;
+    edit.tower.damage = Math.floor(edit.tower.damage * 1.2);
+    edit.tower.range += 5;
+    gameState.gold -= edit.amount;
+  } else {
+    towers.splice(towers.indexOf(edit.tower), 1);
+    edit.tower.spot.tower = null;
+    warriorUnits = warriorUnits.filter((unit) => unit.towerId !== edit.tower.id);
+    gameState.gold += edit.amount;
+  }
+  undoStack.push(edit);
+  closeBuildDrawer();
+  closeUpgradeDrawer();
+  updateUI();
+  updateHistoryButtons();
 }
 
 // WARRIOR UNIT SPAWNING (GUARD TOWER)
@@ -528,6 +661,9 @@ function startNextWave() {
 
   gameState.wave++;
   gameState.inWave = true;
+  undoStack = [];
+  redoStack = [];
+  updateHistoryButtons();
   gameState.waveSpawning = true;
   updateUI();
 
@@ -628,21 +764,15 @@ function updateGameObjects() {
     e.y = a.y + (b.y - a.y) * t;
   }
 
+  const grid = new SpatialHashGrid(100);
+  for (const enemy of enemies) grid.add(enemy);
+
   // 2. Tower Attacks
   for (let t of towers) {
     t.cooldown -= 1 * gameState.gameSpeed;
     if (t.cooldown <= 0) {
       // Find target enemy within range
-      let target = null;
-      let minDist = t.range;
-
-      for (let e of enemies) {
-        const d = Math.hypot(e.x - t.x, e.y - t.y);
-        if (d < minDist) {
-          minDist = d;
-          target = e;
-        }
-      }
+      const target = selectNearestEnemy(t, grid.nearby(t.x, t.y, t.range));
 
       if (target) {
         t.cooldown = t.fireRate;

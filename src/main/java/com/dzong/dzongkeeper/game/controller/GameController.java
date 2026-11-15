@@ -2,6 +2,7 @@ package com.dzong.dzongkeeper.game.controller;
 
 import com.dzong.dzongkeeper.game.model.Accusation;
 import com.dzong.dzongkeeper.game.service.GameService;
+import com.dzong.dzongkeeper.game.structures.WeightedRoomGraph;
 
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +34,12 @@ public class GameController {
 
     @PostMapping("/move/{roomId}")
     public ObjectNode move(@PathVariable String roomId) { return service.move(roomId); }
+
+    @PostMapping("/travel/{roomId}")
+    public ObjectNode travel(@PathVariable String roomId) { return service.travel(roomId); }
+
+    @GetMapping("/route/{roomId}")
+    public WeightedRoomGraph.Route route(@PathVariable String roomId) { return service.previewRoute(roomId); }
 
     @PostMapping("/inspect")
     public ObjectNode inspect() { return service.inspect(); }

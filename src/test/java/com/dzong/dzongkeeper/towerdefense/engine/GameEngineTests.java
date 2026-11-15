@@ -178,4 +178,99 @@ class GameEngineTests {
         assertEquals(2, scores.size());
         assertNotEquals(scores.top(2).get(0).id(), scores.top(2).get(1).id());
     }
+
+    @Test
+    void undoRedoTowerEditsAndClearRedoAfterNewEdit() {
+        GameEngine game = new GameEngine();
+        assertThrows(IllegalArgumentException.class, game::undo);
+        int first = game.build(5, 3);
+        int second = game.build(10, 5);
+        game.upgrade(first);
+        game.sell(second);
+        assertEquals(30, game.state().gold());
+        assertEquals(1, game.state().towers());
+
+        game.undo();
+        assertEquals(10, game.state().gold());
+        assertEquals(2, game.state().towers());
+        game.undo();
+        assertEquals(40, game.state().gold());
+        assertTrue(game.details().contains("level 1"));
+        game.undo();
+        assertEquals(80, game.state().gold());
+        assertEquals(1, game.state().towers());
+        game.redo();
+        game.redo();
+        game.redo();
+        assertEquals(30, game.state().gold());
+        assertEquals(1, game.state().towers());
+        assertThrows(IllegalArgumentException.class, game::redo);
+
+        game.undo();
+        game.sell(first);
+        assertFalse(game.canRedo());
+        assertThrows(IllegalArgumentException.class, game::redo);
+        assertEquals(1, game.state().towers());
+    }
+
+    @Test
+    void simulationBoundaryClearsTowerEditHistory() {
+        GameEngine game = new GameEngine();
+        game.build(5, 3);
+        game.startWave();
+        assertFalse(game.canUndo());
+        game.pause(true);
+        game.upgrade(1);
+        assertFalse(game.canUndo());
+        assertThrows(IllegalArgumentException.class, game::undo);
+        game.tick();
+        assertFalse(game.canUndo());
+        game.pause(false);
+        game.tick();
+        assertFalse(game.canUndo());
+        assertFalse(game.canRedo());
+        assertThrows(IllegalArgumentException.class, game::undo);
+    }
+
+    @Test
+    void undoSaleRestoresUpgradedTowerIdentityPositionAndCooldown() {
+        GameEngine baseline = new GameEngine();
+        GameEngine edited = new GameEngine();
+        int baselineId = baseline.build(5, 3);
+        int editedId = edited.build(5, 3);
+        baseline.upgrade(baselineId);
+        edited.upgrade(editedId);
+        baseline.startWave();
+        edited.startWave();
+        baseline.tick();
+        edited.tick();
+
+        String originalDetails = edited.details();
+        edited.sell(editedId);
+        assertThrows(IllegalArgumentException.class, edited::undo);
+        assertFalse(edited.canUndo());
+
+        baseline.tick();
+        edited.tick();
+        assertNotEquals(baseline.state(), edited.state());
+    }
+
+    @Test
+    void completedWaveHistoryIsNewestFirstAndDoesNotChangeOnRead() {
+        GameEngine game = new GameEngine();
+        assertEquals(0, game.waveHistory().size());
+        game.build(5, 3);
+        game.build(10, 5);
+        game.build(15, 9);
+        game.startWave();
+        advance(game, 100);
+        assertEquals(1, game.waveHistory().size());
+        assertEquals(1, game.waveHistory().get(0).wave());
+        game.startWave();
+        advance(game, 100);
+        assertEquals(2, game.waveHistory().size());
+        assertEquals(2, game.waveHistory().get(0).wave());
+        assertEquals(1, game.waveHistory().get(1).wave());
+        assertEquals(2, game.waveHistory().size());
+    }
 }

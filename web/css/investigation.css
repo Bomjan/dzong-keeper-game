@@ -1,0 +1,52 @@
+:root { font-family: Inter, system-ui, sans-serif; color: #f0e6d2; background: #0f0b09; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid #7a5229; }
+header h1 { margin: 0; font-family: Georgia, serif; color: #e5b150; font-size: 1.5rem; }
+header a { color: #e5b150; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; min-height: calc(100vh - 4.5rem); }
+.map-section { min-height: 34rem; background: #2b2421; }
+#map, #map svg { width: 100%; height: 100%; display: block; }
+.route-panel { padding: 1.5rem; border-left: 1px solid #7a5229; background: #1f1510; }
+.route-panel h2 { margin-top: 0; color: #e5b150; }
+.route-panel p { line-height: 1.5; }
+.route-panel label { display: block; margin: 1.5rem 0 .4rem; font-weight: 700; }
+.route-panel select, .route-panel button { width: 100%; padding: .75rem; border: 1px solid #a87539; border-radius: .4rem; font: inherit; }
+.route-panel select { color: #f0e6d2; background: #120c09; }
+.route-panel button { margin-top: .8rem; color: #1a1009; background: #e5b150; cursor: pointer; font-weight: 700; }
+.route-panel button:disabled { opacity: .45; cursor: not-allowed; }
+.route-panel button[aria-pressed="true"] { color: #e5b150; background: #382316; }
+.route-details { margin-top: 1rem; min-height: 6rem; padding: 1rem; border: 1px solid #7a5229; border-radius: .4rem; background: #120c09; }
+.route-details p { margin-top: 0; }
+.hint { color: #b9a58c; font-size: .88rem; }
+#message { color: #ffd78a; }
+.map-sky { fill: #e8cda8; }
+.map-hills { fill: #6d5b50; }
+.edge .path-wide { stroke: #3d2b23; stroke-width: 18; }
+.edge .path-core { stroke: #b78754; stroke-width: 8; }
+.edge.locked .path-core { stroke: #6b3532; stroke-dasharray: 9 8; }
+.edge.route-active .path-core { stroke: #f6dd69; stroke-width: 12; }
+.edge-hit { stroke: transparent; stroke-width: 24; cursor: default; }
+.edge.lockable .edge-hit { cursor: pointer; }
+.edge-barrier { stroke: #8d2626; stroke-width: 4; display: none; }
+.edge.locked .edge-barrier { display: block; }
+.edge-cost-bg { fill: #25140d; stroke: #e5b150; stroke-width: 1.5; }
+.edge-cost-text { fill: #fff1c8; text-anchor: middle; dominant-baseline: middle; font-size: 11px; font-weight: 700; }
+.room { cursor: pointer; }
+.room-hit { fill: transparent; }
+.room .bldg-wall { fill: #d3aa76; stroke: #5b3824; stroke-width: 2; }
+.room .bldg-roof, .room .bldg-eave { fill: #793c2c; stroke: #4a251e; stroke-width: 2; }
+.room .bldg-band { fill: #e5b150; }
+.room .bldg-window { fill: #3d241c; }
+.room .bldg-courtyard-tile { fill: #ad845d; stroke: #5b3824; stroke-width: 2; }
+.room .bldg-courtyard-grid { stroke: #694b36; stroke-width: 1.5; }
+.room-label { fill: #fff7e9; text-anchor: middle; font-size: 13px; font-weight: 700; paint-order: stroke; stroke: #24150d; stroke-width: 3; }
+.room.route-room .bldg-wall, .room.route-room .bldg-courtyard-tile { fill: #ffe08b; }
+.room.destination .room-label { fill: #f8dd55; }
+.room-current-glow { fill: #f8dd55; opacity: 0; }
+.room.current .room-current-glow { opacity: .75; }
+.room-badge circle { fill: #9b3228; }
+.room-badge text { fill: white; text-anchor: middle; dominant-baseline: middle; font-size: 11px; }
+.player-body { fill: #2f6e62; stroke: #f9efdb; stroke-width: 2; }
+.player-dot { fill: #fff; }
+@media (max-width: 760px) { main { grid-template-columns: 1fr; } .map-section { min-height: 60vh; } .route-panel { border-left: 0; border-top: 1px solid #7a5229; } header { flex-wrap: wrap; } }

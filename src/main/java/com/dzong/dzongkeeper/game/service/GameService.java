@@ -2,6 +2,7 @@ package com.dzong.dzongkeeper.game.service;
 
 import com.dzong.dzongkeeper.game.model.Accusation;
 import com.dzong.dzongkeeper.game.model.GameSession;
+import com.dzong.dzongkeeper.game.structures.WeightedRoomGraph;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,10 +38,11 @@ public class GameService {
     }
 
     public synchronized ObjectNode state() {
-        if ("LOST".equals(session.state.path("phase").asText())) {
-            session.state.put("message", "Time has run out. The intruder escaped.");
+        ObjectNode snapshot = session.state.deepCopy();
+        if ("LOST".equals(snapshot.path("phase").asText())) {
+            snapshot.put("message", "Time has run out. The intruder escaped.");
         }
-        return session.state.deepCopy();
+        return snapshot;
     }
 
     public synchronized List<JsonNode> searchRegister(String query) {
@@ -75,6 +77,46 @@ public class GameService {
         refreshAdjacent();
         session.state.put("message", "You walk to the " + room.path("name").asText() + ".");
         return state();
+    }
+
+    /** Travel to any reachable room along the least-cost unlocked route. */
+    public synchronized ObjectNode travel(String roomId) {
+        requirePlaying();
+        ArrayNode rooms = session.state.withArray("rooms");
+        ObjectNode destination = find(rooms, roomId);
+        String current = session.state.path("currentRoom").asText();
+        if (current.equals(roomId)) throw badRequest("You are already in that room");
+        WeightedRoomGraph.Route route = previewRoute(roomId);
+        if (!route.reachable()) throw badRequest("That room is not reachable from here");
+        if (route.cost() > Integer.MAX_VALUE) throw badRequest("The route costs too much time");
+        spend((int) route.cost());
+        for (String visitedId : route.rooms()) {
+            find(rooms, visitedId).put("visited", true);
+        }
+        session.state.put("currentRoom", roomId);
+        refreshAdjacent();
+        session.state.put("message", "You walk to the " + destination.path("name").asText() + ".");
+        return state();
+    }
+
+    /** Preview a route without spending time or changing the current room. */
+    public synchronized WeightedRoomGraph.Route previewRoute(String roomId) {
+        requirePlaying();
+        find(session.state.withArray("rooms"), roomId);
+        return roomGraph().shortestRoute(session.state.path("currentRoom").asText(), roomId);
+    }
+
+    private WeightedRoomGraph roomGraph() {
+        WeightedRoomGraph graph = new WeightedRoomGraph();
+        for (JsonNode room : session.state.withArray("rooms")) {
+            graph.addRoom(room.path("id").asText());
+        }
+        for (JsonNode edge : session.state.withArray("edges")) {
+            if (!edge.path("locked").asBoolean()) {
+                graph.connect(edge.path("from").asText(), edge.path("to").asText(), edge.path("cost").asInt());
+            }
+        }
+        return graph;
     }
 
     public synchronized ObjectNode inspect() {

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dzong Keeper · Investigation Map</title>
+  <link rel="stylesheet" href="css/investigation.css">
+</head>
+<body>
+  <header>
+    <a href="/">← Tower defense</a>
+    <h1>Investigation Map</h1>
+    <span id="time-remaining" aria-live="polite"></span>
+  </header>
+  <main>
+    <section class="map-section" aria-label="Dzong room map">
+      <div id="map"></div>
+    </section>
+    <aside class="route-panel">
+      <h2>Plan a route</h2>
+      <p>Select a room on the map or from the list to preview the shortest unlocked route.</p>
+      <label for="destination">Destination</label>
+      <select id="destination"><option value="">Choose a room</option></select>
+      <div id="route-details" class="route-details" aria-live="polite">Choose a destination to see the route.</div>
+      <button id="travel" type="button" disabled>Travel this route</button>
+      <button id="lock-mode" type="button" aria-pressed="false">Change corridor locks</button>
+      <p class="hint">In lock mode, click a corridor to lock or reopen it. Changing a lock costs 2 minutes.</p>
+      <p id="message" role="status"></p>
+    </aside>
+  </main>
+  <script type="module" src="js/investigation.js"></script>
+</body>
+</html>

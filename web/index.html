@@ -43,6 +43,11 @@
         <i class="fa-solid fa-gear text-xs text-[#7A5229]"></i> OPTIONS
       </button>
 
+      <a href="investigation.html"
+        class="py-3 px-6 bg-gradient-to-r from-[#2C1A10] via-[#4A2E1A] to-[#2C1A10] border-2 border-[#7A5229] text-[#E5B150] hover:border-[#D8982D] hover:text-[#FFF2A1] transition-all duration-200 rounded-md font-bold tracking-widest flex items-center justify-center gap-3 shadow-lg">
+        <i class="fa-solid fa-map"></i> INVESTIGATION MAP
+      </a>
+
       <button onclick="openModal('modal-how-to-play')" 
         class="py-3 px-6 bg-gradient-to-r from-[#2C1A10] via-[#4A2E1A] to-[#2C1A10] border-2 border-[#7A5229] text-[#E5B150] hover:border-[#D8982D] hover:text-[#FFF2A1] transition-all duration-200 rounded-md font-bold tracking-widest flex items-center justify-center gap-3 shadow-lg hover:scale-105 active:scale-95">
         <i class="fa-solid fa-circle-info text-xs text-[#7A5229]"></i> HOW TO PLAY
@@ -152,6 +157,14 @@
 
       <!-- Right Action Controls -->
       <div class="pointer-events-auto flex items-center gap-2">
+        <button id="btn-undo" onclick="undoTowerEdit()" title="Undo tower edit" aria-label="Undo tower edit"
+          class="w-10 h-10 bg-[#1F1510] border-2 border-[#7A5229] hover:border-[#D8982D] rounded-lg text-[#E5B150] disabled:opacity-40" disabled>
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+        <button id="btn-redo" onclick="redoTowerEdit()" title="Redo tower edit" aria-label="Redo tower edit"
+          class="w-10 h-10 bg-[#1F1510] border-2 border-[#7A5229] hover:border-[#D8982D] rounded-lg text-[#E5B150] disabled:opacity-40" disabled>
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
         <button id="btn-pause" onclick="togglePause()" 
           class="w-10 h-10 bg-[#1F1510] border-2 border-[#7A5229] hover:border-[#D8982D] rounded-lg text-[#E5B150] flex items-center justify-center transition shadow-lg">
           <i class="fa-solid fa-pause"></i>

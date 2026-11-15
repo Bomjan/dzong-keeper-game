@@ -4,9 +4,14 @@ import com.dzong.dzongkeeper.towerdefense.model.Enemy;
 import com.dzong.dzongkeeper.towerdefense.model.GamePath;
 import com.dzong.dzongkeeper.towerdefense.model.Tower;
 import com.dzong.dzongkeeper.towerdefense.structures.Array;
+import com.dzong.dzongkeeper.towerdefense.structures.SpatialHashGrid;
 
 /** Chooses the nearest enemy in range; ties go to the smaller enemy ID. */
 public final class TargetSelector {
+    public Enemy select(Tower tower, SpatialHashGrid grid) {
+        return select(tower, grid.getNearbyEnemies(tower.position(), tower.range()));
+    }
+
     public Enemy select(Tower tower, Array<Enemy> enemies) {
         Enemy closest = null;
         double closestDistance = tower.range();
