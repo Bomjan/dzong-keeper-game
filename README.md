@@ -19,7 +19,11 @@ Requires JDK 27. Run `./mvnw spring-boot:run` (Windows: `.\mvnw.cmd spring-boot:
 
 The game runs in memory and resets when the server restarts. GitHub Pages shows a static preview only.
 
-The browser tower-defense game has Undo and Redo buttons in the gameplay HUD.
+The browser tower-defense game uses a Three.js battlefield with 3D paths,
+the Dzong, towers, enemies, shots, and clickable build pads. The existing 2D
+canvas remains a fallback if Three.js or WebGL cannot load. Three.js is loaded
+from a pinned CDN module, so the 3D view needs internet access. The game has
+Undo and Redo buttons in the gameplay HUD.
 They reverse tower builds, upgrades, and sales during preparation and between
 waves. Its targeting uses a 100-pixel spatial grid, rebuilt from current enemy
 positions each frame. The Java console game remains a separate implementation.

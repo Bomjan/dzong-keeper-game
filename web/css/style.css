@@ -10,6 +10,26 @@ body {
   overflow: hidden;
 }
 
+#screen-gameplay { overflow: hidden; }
+#gameCanvas, .three-battlefield { position: absolute; inset: 0; width: 100%; height: 100%; }
+#gameCanvas { z-index: 1; }
+.three-battlefield { z-index: 0; display: block; }
+#screen-gameplay button:focus-visible { outline: 3px solid #FFF2A1; outline-offset: 3px; }
+
+@media (max-width: 700px) {
+  #screen-main-menu h1 { font-size: clamp(2.2rem, 10vw, 4.5rem); line-height: 1.05; }
+  #screen-mode-select h2 { font-size: 2rem; margin-bottom: 1.5rem; }
+  #screen-mode-select .grid.grid-cols-3 { grid-template-columns: 1fr; max-height: 70vh; overflow-y: auto; }
+  #screen-gameplay .absolute.top-4 { left: 0.5rem; right: 0.5rem; top: 0.5rem; gap: 0.4rem; flex-wrap: wrap; }
+  #screen-gameplay .absolute.top-4 > div { padding: 0.35rem; gap: 0.35rem; }
+  #screen-gameplay .absolute.top-4 > div:nth-child(1) { order: 1; }
+  #screen-gameplay .absolute.top-4 > div:nth-child(2) { order: 3; margin: 0 auto; width: 5rem; }
+  #screen-gameplay .absolute.top-4 > div:nth-child(3) { order: 2; }
+  #screen-gameplay .absolute.top-4 button { width: 2rem; height: 2rem; }
+  #scene-status { top: 8.2rem; max-width: 90vw; text-align: center; font-size: 0.75rem; }
+  #build-drawer, #tower-upgrade-drawer { left: 0.5rem; right: 0.5rem; bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem; }
+}
+
 .font-cinzel {
   font-family: 'Cinzel', serif;
 }

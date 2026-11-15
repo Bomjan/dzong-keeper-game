@@ -37,6 +37,9 @@ function exitGame() {
 let canvas, ctx;
 let gameLoopId = null;
 let waveSpawnIntervalId = null;
+let threeScene = null;
+let threeScenePromise = null;
+let canvasListenersAdded = false;
 
 let gameState = {
   difficulty: 'Normal',
@@ -207,12 +210,26 @@ function initCanvas() {
   ctx = canvas.getContext('2d');
 
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
-  // Mouse click interactions for building/upgrading
-  canvas.addEventListener('click', handleCanvasClick);
+  if (!canvasListenersAdded) {
+    window.addEventListener('resize', resizeCanvas);
+    canvas.addEventListener('click', handleCanvasClick);
+    canvasListenersAdded = true;
+  }
 
   resetGame();
+  if (!threeScenePromise) {
+    threeScenePromise = import('./three-scene.mjs').then(({ DzongScene }) => {
+      const scene = new DzongScene(canvas);
+      scene.resize(canvas.width, canvas.height, paths, buildSpots);
+      threeScene = scene;
+      canvas.style.opacity = '0';
+      document.getElementById('scene-status').textContent =
+        'Select a glowing build pad to place a tower. Defend the Dzong at the center.';
+    }).catch(() => {
+      document.getElementById('scene-status').textContent =
+        '3D view unavailable. The 2D battlefield is still playable.';
+    });
+  }
   if (!gameLoopId) {
     lastTime = performance.now();
     gameLoopId = requestAnimationFrame(gameEngineLoop);
@@ -268,6 +285,7 @@ function resizeCanvas() {
     spot.tower.x = spot.x;
     spot.tower.y = spot.y;
   }
+  if (threeScene) threeScene.resize(canvas.width, canvas.height, paths, buildSpots);
 }
 
 // Give each straight path a gentle S-curve and sample it for enemy movement.
@@ -448,12 +466,13 @@ function handleCanvasClick(e) {
   const rect = canvas.getBoundingClientRect();
   const clickX = e.clientX - rect.left;
   const clickY = e.clientY - rect.top;
+  const selectedSpotId = threeScene?.pickSpot(e.clientX, e.clientY);
 
   // Check if clicked on build spots
   let foundSpot = false;
   for (let spot of buildSpots) {
     const dist = Math.hypot(spot.x - clickX, spot.y - clickY);
-    if (dist <= 25) {
+    if (threeScene ? spot.id === selectedSpotId : dist <= 25) {
       foundSpot = true;
       if (!spot.tower) {
         // Empty spot -> open Build Drawer
@@ -872,6 +891,11 @@ function triggerGameEnd(isVictory) {
 // CANVAS RENDERING METHODS
 // ==========================================
 function renderGameCanvas() {
+  if (threeScene) {
+    threeScene.render(buildSpots, towers, enemies, projectiles, warriorUnits,
+      gameState.selectedBuildSpot, gameState.selectedTower);
+    return;
+  }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Background Field

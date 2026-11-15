@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1280">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.181.2/build/three.module.js"}}
+  </script>
   <title>The Last Dzong Keeper</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -182,6 +185,9 @@
 
     <!-- Main Game Canvas -->
     <canvas id="gameCanvas" class="w-full h-full block bg-[#142114]"></canvas>
+    <div id="scene-status" class="absolute top-20 left-1/2 -translate-x-1/2 z-20 rounded-lg border border-[#7A5229] bg-[#1F1510]/90 px-4 py-2 text-sm text-[#FFF2A1] pointer-events-none" role="status">
+      Select a glowing build pad to place a tower. Defend the Dzong at the center.
+    </div>
 
     <!-- Bottom Left Start Wave Button -->
     <div class="absolute bottom-6 left-6 z-20">
