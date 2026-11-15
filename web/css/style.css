@@ -36,9 +36,26 @@ body {
 
 /* Gold Gradient Text */
 .text-gold-gradient {
-  background: linear-gradient(180deg, #FFF2A1 0%, #D8982D 70%, #A36B15 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background: none;
+  color: #e7d7b8;
+  -webkit-text-fill-color: currentColor;
+}
+
+#screen-main-menu button,
+#screen-main-menu a,
+#screen-mode-select button,
+#btn-start-battle {
+  background-image: none;
+  background-color: #211c18;
+  box-shadow: none;
+  transform: none;
+}
+
+#screen-main-menu button:hover,
+#screen-main-menu a:hover,
+#screen-mode-select button:hover,
+#btn-start-battle:hover {
+  background-color: #352b22;
 }
 
 /* Gold Border Glow */

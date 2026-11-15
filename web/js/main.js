@@ -224,7 +224,7 @@ function initCanvas() {
       threeScene = scene;
       canvas.style.opacity = '0';
       document.getElementById('scene-status').textContent =
-        'Select a glowing build pad to place a tower. Defend the Dzong at the center.';
+        'Select a stone build pad to place a tower. Defend the Dzong at the center.';
     }).catch(() => {
       document.getElementById('scene-status').textContent =
         '3D view unavailable. The 2D battlefield is still playable.';

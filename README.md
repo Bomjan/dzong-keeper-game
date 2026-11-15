@@ -24,6 +24,8 @@ the Dzong, towers, enemies, shots, and clickable build pads. The existing 2D
 canvas remains a fallback if Three.js or WebGL cannot load. Three.js is loaded
 from a pinned CDN module, so the 3D view needs internet access. The game has
 Undo and Redo buttons in the gameplay HUD.
+The dzong and terrain use local textures and are based on [documented Bhutanese
+architecture references](docs/visual-references.md).
 They reverse tower builds, upgrades, and sales during preparation and between
 waves. Its targeting uses a 100-pixel spatial grid, rebuilt from current enemy
 positions each frame. The Java console game remains a separate implementation.
